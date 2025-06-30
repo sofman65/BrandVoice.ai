@@ -118,23 +118,18 @@ export default function HomePage() {
 
       <div className="relative z-10 container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-12">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col items-center justify-between mb-15 w-full">
+          <div className="flex flex-col items-center gap-5 w-full">
             <div className="relative">
               <Image
-                src="/spaceslam-logo.svg"
+                src="./spaceslamlogo.png"
                 alt="Spaceslam Logo"
-                width={60}
-                height={60}
-                className="filter brightness-0 invert"
+                width={240}
+                height={240}
+                className="h-12 w-auto object-contain mx-auto"
               />
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-white">
-                Space<span className="text-purple-400">slam</span>
-              </h1>
-              <p className="text-purple-300 font-medium">Content Repurposer</p>
-            </div>
+            <h1 className="text-3xl md:text-4xl font-bold text-white text-center w-full">BrandVoice.ai</h1>
           </div>
           <ThemeToggle />
         </div>
@@ -144,7 +139,7 @@ export default function HomePage() {
           <div className="text-center space-y-6">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/20 border border-purple-500/30 rounded-full text-purple-300 text-sm font-medium">
               <Sparkles className="h-4 w-4" />
-              Powered by AI Technology
+              Powered by Sofianos Lampropoulos
             </div>
             <h2 className="text-5xl md:text-6xl font-bold text-white leading-tight">
               Transform Your

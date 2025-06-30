@@ -4,6 +4,8 @@ import { generateContent, transcribeAudio } from "@/lib/openai"
 import { checkRateLimit } from "@/lib/rate-limit"
 import { isValidInstagramUrl } from "@/lib/utils"
 
+export const runtime = "nodejs"
+
 export async function POST(request: NextRequest) {
   try {
     // Get client IP for rate limiting

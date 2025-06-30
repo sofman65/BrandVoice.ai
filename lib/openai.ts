@@ -3,6 +3,9 @@ import "server-only"
 
 import type { GeneratedContent } from "./types"
 import { sleep } from "./utils"
+import { Buffer as NodeBuffer } from "buffer"
+import fs from "fs"
+import path from "path"
 
 /* -------------------------------------------------------------------------- */
 /*                         LAZY-LOAD AND SINGLETON SETUP                      */
@@ -40,12 +43,24 @@ export async function transcribeAudio(audioUrl: string): Promise<string> {
   const openai = await getOpenAI()
   if (!openai) throw new Error("OpenAI client not initialised")
 
-  // NOTE: In production you’d download the file to a Buffer first.
+  // Download the audio file to a Buffer (Node.js only)
+  const audioResponse = await fetch(audioUrl)
+  if (!audioResponse.ok) {
+    throw new Error(`Failed to download audio: HTTP ${audioResponse.status}`)
+  }
+  const arrayBuffer = await audioResponse.arrayBuffer()
+  const audioBuffer = NodeBuffer.from(arrayBuffer)
+  // Write buffer to a temporary file
+  const tempPath = path.join(process.cwd(), `temp-audio-${Date.now()}.mp3`)
+  fs.writeFileSync(tempPath, audioBuffer)
+  // Send the file path to OpenAI
+  const fileStream = fs.createReadStream(tempPath)
   const result = await openai.audio.transcriptions.create({
-    file: audioUrl,
+    file: fileStream,
     model: "whisper-1",
   })
-
+  // Clean up temp file
+  fs.unlinkSync(tempPath)
   return result.text
 }
 
