@@ -1,7 +1,7 @@
 "use server"
 import "server-only"
 
-import { fetchInstagramMedia, MetaGraphAPIError } from "./meta-graph"
+import { fetchInstagramMedia, type MetaGraphAPIError, isMetaGraphAPIError } from "./meta-graph"
 import { sleep } from "./utils"
 
 /**
@@ -26,11 +26,11 @@ export async function fetchInstagram(url: string): Promise<{
 
     return {
       caption:
-        "🚀 Explaining how I boosted developer productivity by 10× with Space-Tech hacks. #coding #productivity #spaceslam",
+        "Improve your development workflow with these amazing tools! 🚀 #coding #productivity",
       media_type: isVideo ? "video" : "image",
       media_url: isVideo ? "https://example.com/mock-video.mp4" : "https://example.com/mock-image.jpg",
       thumbnail_url: "https://example.com/mock-thumbnail.jpg",
-      username: "spaceslam_official",
+      username: "edhonour",
       timestamp: new Date().toISOString(),
     }
   }
@@ -39,18 +39,23 @@ export async function fetchInstagram(url: string): Promise<{
     const mediaData = await fetchInstagramMedia(url)
     return mediaData
   } catch (error) {
-    if (error instanceof MetaGraphAPIError) {
+    // Check if it's a MetaGraphAPIError
+    const isMetaError = await isMetaGraphAPIError(error)
+    if (isMetaError) {
+      // Extract error properties since we can't use instanceof with the type
+      const metaError = error as MetaGraphAPIError
+
       // Log the specific error for debugging
       console.error("Meta Graph API Error:", {
-        message: error.message,
-        code: error.code,
-        type: error.type,
-        subcode: error.subcode,
-        traceId: error.traceId,
+        message: metaError.message,
+        code: metaError.code,
+        type: metaError.type,
+        subcode: metaError.subcode,
+        traceId: metaError.traceId,
       })
 
       // Handle specific error types
-      switch (error.type) {
+      switch (metaError.type) {
         case "AuthenticationError":
           throw new Error("Instagram API authentication failed. Please check your access token.")
 
@@ -64,7 +69,7 @@ export async function fetchInstagram(url: string): Promise<{
           throw new Error("Network error while fetching Instagram data. Please try again.")
 
         default:
-          throw new Error(`Instagram API error: ${error.message}`)
+          throw new Error(`Instagram API error: ${metaError.message}`)
       }
     }
 
@@ -74,12 +79,4 @@ export async function fetchInstagram(url: string): Promise<{
   }
 }
 
-/**
- * Extract audio URL from Instagram video for transcription
- * In practice, this would be the same as media_url for videos
- */
-export function getAudioUrlFromVideo(mediaUrl: string): string {
-  // For Instagram videos, the media_url contains both video and audio
-  // Whisper can extract audio from video files directly
-  return mediaUrl
-}
+

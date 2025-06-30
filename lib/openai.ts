@@ -75,7 +75,7 @@ export async function transcribeAudio(mediaUrl: string): Promise<string> {
       model: "whisper-1",
       language: "en", // Specify language for better accuracy
       response_format: "text",
-      temperature: 0.2, // Lower temperature for more consistent results
+      temperature: 0.0, // Lower temperature for more consistent results
     })
 
     await fileStream.close()
@@ -145,11 +145,26 @@ What are your thoughts on this breakthrough? Let's discuss in the comments!
 #SpaceTech #Innovation #TechTrends #FutureOfWork #DigitalTransformation #TechNews #BrandVoiceAI`,
 
       carousel: [
-        "🚀 SPACE-TECH BREAKTHROUGH ALERT! Something incredible just happened in the tech world that's about to change everything...",
-        "💡 THE INNOVATION REVEALED: Here's what's changing the game and why it matters for the future of technology and business...",
-        "🌌 REAL-WORLD IMPACT: This technology is already transforming how we work, create, and connect in the digital universe...",
-        "⚡ WHY IT MATTERS NOW: The implications for businesses, creators, and innovators are absolutely massive and immediate...",
-        "🔥 WHAT'S NEXT: Ready to be part of the space-tech revolution? Here's how to get started and stay ahead of the curve...",
+        {
+          heading: "🚀 SPACE-TECH BREAKTHROUGH ALERT!",
+          body: "Something incredible just happened in the tech world that's about to change everything we know about productivity and innovation."
+        },
+        {
+          heading: "💡 THE INNOVATION REVEALED",
+          body: "Here's what's changing the game and why it matters for the future of technology and business in our increasingly digital world."
+        },
+        {
+          heading: "🌌 REAL-WORLD IMPACT",
+          body: "This technology is already transforming how we work, create, and connect in the digital universe. Early adopters are seeing 10× results!"
+        },
+        {
+          heading: "⚡ WHY IT MATTERS NOW",
+          body: "The implications for businesses, creators, and innovators are absolutely massive and immediate. Don't get left behind in the space race."
+        },
+        {
+          heading: "🔥 WHAT'S NEXT",
+          body: "Ready to be part of the space-tech revolution? Here's how to get started and stay ahead of the curve with these cosmic productivity hacks."
+        }
       ],
 
       threads: `🚀 Just discovered something mind-blowing in the space-tech world!
@@ -195,14 +210,35 @@ Create cross-platform content that embodies Spaceslam's brand: innovative, energ
 CRITICAL: Return ONLY valid JSON in this EXACT format:
 {
   "linkedin": "Professional LinkedIn post with hashtags and engagement hooks",
-  "carousel": ["slide 1 text", "slide 2 text", "slide 3 text", "slide 4 text", "slide 5 text"],
+  "carousel": [
+    {
+      "heading": "Slide 1 Title (attention-grabbing)",
+      "body": "Slide 1 main content that expands on the title"
+    },
+    {
+      "heading": "Slide 2 Title (problem/challenge)",
+      "body": "Slide 2 main content that addresses the problem"
+    },
+    {
+      "heading": "Slide 3 Title (solution/insight)",
+      "body": "Slide 3 main content that presents the solution"
+    },
+    {
+      "heading": "Slide 4 Title (benefits/results)",
+      "body": "Slide 4 main content that showcases benefits"
+    },
+    {
+      "heading": "Slide 5 Title (call to action)",
+      "body": "Slide 5 main content that prompts engagement"
+    }
+  ],
   "threads": "Conversational Threads post under 500 characters",
   "video_script": "Complete video script with visual cues and timing"
 }
 
 IMPORTANT RULES:
-- carousel MUST be an array of exactly 5 strings (not objects)
-- Each carousel slide should be complete, engaging copy (not just headings)
+- carousel MUST be an array of exactly 5 objects, each with a 'heading' and 'body' (not strings)
+- Each carousel slide should be a complete, engaging story element (not just a title)
 - Use space-tech terminology and emojis (🚀🌌⚡🔥💡)
 - Keep Spaceslam's energetic, innovative tone
 - LinkedIn: Professional but exciting, include hashtags, mention BrandVoice.ai
@@ -244,15 +280,18 @@ Caption: ${caption}${transcript ? `\n\nVideo Transcript: ${transcript}` : ""}`
       throw new Error("AI response missing required fields")
     }
 
-    // Ensure carousel contains strings
-    if (parsed.carousel.some((slide) => typeof slide !== "string")) {
-      console.error("Carousel contains non-string values:", parsed.carousel)
-      throw new Error("Carousel must contain only strings")
+    // Ensure carousel contains objects with heading and body
+    if (parsed.carousel.some((slide) => typeof slide !== "object" || !slide.heading || !slide.body)) {
+      console.error("Carousel contains invalid objects:", parsed.carousel)
+      throw new Error("Carousel must contain objects with 'heading' and 'body'")
     }
 
     // Ensure exactly 5 carousel slides
     while (parsed.carousel.length < 5) {
-      parsed.carousel.push(`Slide ${parsed.carousel.length + 1}: Continue the space-tech story...`)
+      parsed.carousel.push({
+        heading: `Slide ${parsed.carousel.length + 1} Title`,
+        body: `Continue the space-tech story...`,
+      })
     }
     parsed.carousel = parsed.carousel.slice(0, 5)
 

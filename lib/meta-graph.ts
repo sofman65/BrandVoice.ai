@@ -22,7 +22,8 @@ interface MetaGraphError {
   }
 }
 
-export class MetaGraphAPIError extends Error {
+// Regular class, not exported directly from server module
+class MetaGraphAPIErrorClass extends Error {
   constructor(
     message: string,
     public code: number,
@@ -33,6 +34,25 @@ export class MetaGraphAPIError extends Error {
     super(message)
     this.name = "MetaGraphAPIError"
   }
+}
+
+// Export through an async wrapper function
+export async function createMetaGraphAPIError(
+  message: string,
+  code: number,
+  type: string,
+  subcode?: number,
+  traceId?: string,
+): Promise<MetaGraphAPIErrorClass> {
+  return new MetaGraphAPIErrorClass(message, code, type, subcode, traceId);
+}
+
+// Type for external use
+export type MetaGraphAPIError = MetaGraphAPIErrorClass;
+
+// Helper function to check if an error is a MetaGraphAPIError
+export async function isMetaGraphAPIError(error: unknown): Promise<boolean> {
+  return error instanceof MetaGraphAPIErrorClass;
 }
 
 /**
@@ -64,9 +84,9 @@ function extractInstagramMediaId(url: string): string | null {
  * Convert Instagram shortcode to media ID
  * Instagram uses base64-like encoding for shortcodes
  */
-function shortcodeToMediaId(shortcode: string): string {
+export async function shortcodeToMediaId(shortcode: string): Promise<string> {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
-  let mediaId = 0n
+  let mediaId = BigInt(0)
 
   for (let i = 0; i < shortcode.length; i++) {
     const char = shortcode[i]
@@ -74,7 +94,7 @@ function shortcodeToMediaId(shortcode: string): string {
     if (index === -1) {
       throw new Error(`Invalid character in shortcode: ${char}`)
     }
-    mediaId = mediaId * 64n + BigInt(index)
+    mediaId = mediaId * BigInt(64) + BigInt(index)
   }
 
   return mediaId.toString()
@@ -92,12 +112,14 @@ export async function fetchInstagramMedia(url: string): Promise<{
   timestamp: string
 }> {
   if (!process.env.META_ACCESS_TOKEN) {
-    throw new MetaGraphAPIError("Meta access token is not configured", 401, "AuthenticationError")
+    const error = await createMetaGraphAPIError("Meta access token is not configured", 401, "AuthenticationError");
+    throw error;
   }
 
   const shortcode = extractInstagramMediaId(url)
   if (!shortcode) {
-    throw new MetaGraphAPIError("Invalid Instagram URL format", 400, "InvalidURL")
+    const error = await createMetaGraphAPIError("Invalid Instagram URL format", 400, "InvalidURL");
+    throw error;
   }
 
   try {
@@ -128,13 +150,14 @@ export async function fetchInstagramMedia(url: string): Promise<{
 
     if (!response.ok) {
       const errorData: MetaGraphError = await response.json()
-      throw new MetaGraphAPIError(
+      const error = await createMetaGraphAPIError(
         errorData.error.message,
         errorData.error.code,
         errorData.error.type,
         errorData.error.error_subcode,
         errorData.error.fbtrace_id,
       )
+      throw error
     }
 
     const data: MetaGraphResponse = await response.json()
@@ -148,25 +171,38 @@ export async function fetchInstagramMedia(url: string): Promise<{
       timestamp: data.timestamp,
     }
   } catch (error) {
-    if (error instanceof MetaGraphAPIError) {
+    if (error instanceof MetaGraphAPIErrorClass) {
       throw error
     }
 
     // Handle rate limiting
     if (error instanceof Error && error.message.includes("rate limit")) {
-      throw new MetaGraphAPIError("Instagram API rate limit exceeded. Please try again later.", 429, "RateLimitError")
+      const rateLimitError = await createMetaGraphAPIError(
+        "Instagram API rate limit exceeded. Please try again later.",
+        429,
+        "RateLimitError"
+      );
+      throw rateLimitError;
     }
 
     // Handle network errors
-    if (error instanceof Error && (error.message.includes("fetch") || error.message.includes("network"))) {
-      throw new MetaGraphAPIError("Network error while fetching Instagram data", 503, "NetworkError")
+    if (error instanceof Error && error.message.includes("network")) {
+      const networkError = await createMetaGraphAPIError(
+        "Network error while fetching Instagram data",
+        503,
+        "NetworkError"
+      );
+      throw networkError;
     }
 
-    throw new MetaGraphAPIError(
-      `Failed to fetch Instagram media: ${error instanceof Error ? error.message : "Unknown error"}`,
+    // Generic API error
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const genericError = await createMetaGraphAPIError(
+      `Instagram API error: ${errorMessage}`,
       500,
-      "UnknownError",
-    )
+      "APIError"
+    );
+    throw genericError;
   }
 }
 
@@ -183,7 +219,12 @@ export async function downloadInstagramVideo(mediaUrl: string): Promise<Buffer> 
     })
 
     if (!response.ok) {
-      throw new Error(`Failed to download video: HTTP ${response.status}`)
+      const error = await createMetaGraphAPIError(
+        `Failed to download video: HTTP ${response.status}`,
+        response.status,
+        "DownloadError",
+      );
+      throw error;
     }
 
     const contentType = response.headers.get("content-type")
@@ -194,40 +235,34 @@ export async function downloadInstagramVideo(mediaUrl: string): Promise<Buffer> 
     const arrayBuffer = await response.arrayBuffer()
     return Buffer.from(arrayBuffer)
   } catch (error) {
-    throw new MetaGraphAPIError(
-      `Failed to download video: ${error instanceof Error ? error.message : "Unknown error"}`,
+    if (error instanceof MetaGraphAPIErrorClass) {
+      throw error
+    }
+
+    const downloadError = await createMetaGraphAPIError(
+      error instanceof Error ? error.message : "Unknown download error",
       500,
       "DownloadError",
-    )
+    );
+    throw downloadError;
   }
 }
 
 /**
  * Validate video file for Whisper processing
  */
-export function validateVideoForTranscription(buffer: Buffer, maxSizeBytes = 25 * 1024 * 1024): void {
+export async function validateVideoForTranscription(buffer: Buffer, maxSizeBytes = 25 * 1024 * 1024): Promise<void> {
   // Check file size (Whisper has a 25MB limit)
   if (buffer.length > maxSizeBytes) {
-    throw new MetaGraphAPIError(
-      `Video file too large: ${(buffer.length / 1024 / 1024).toFixed(1)}MB (max: ${maxSizeBytes / 1024 / 1024}MB)`,
+    const error = await createMetaGraphAPIError(
+      `Video file too large (${Math.round(buffer.length / 1024 / 1024)}MB). Max size is ${Math.round(
+        maxSizeBytes / 1024 / 1024,
+      )}MB`,
       413,
-      "FileTooLarge",
+      "PayloadTooLargeError",
     )
+    throw error
   }
 
-  // Basic validation - check for video file signatures
-  const videoSignatures = [
-    [0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70], // MP4
-    [0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70], // MP4
-    [0x1a, 0x45, 0xdf, 0xa3], // WebM/MKV
-    [0x46, 0x4c, 0x56, 0x01], // FLV
-  ]
-
-  const hasValidSignature = videoSignatures.some((signature) => {
-    return signature.every((byte, index) => buffer[index] === byte)
-  })
-
-  if (!hasValidSignature) {
-    throw new MetaGraphAPIError("Invalid video file format", 415, "UnsupportedMediaType")
-  }
+  // Additional validations can be added here
 }

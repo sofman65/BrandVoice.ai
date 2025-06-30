@@ -120,29 +120,27 @@ export default function HomePage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-12">
           <div className="flex items-center gap-6">
-            {/* Spaceslam Logo */}
-            <div className="relative">
-              <Image
-                src="/spaceslam-logo.svg"
-                alt="Spaceslam Logo"
-                width={80}
-                height={80}
-                className="filter brightness-0 invert"
-              />
-            </div>
+
             {/* Brand Hierarchy */}
             <div className="flex flex-col">
               <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-bold text-white">
-                  Space<span className="text-purple-400">slam</span>
-                </h1>
-                <div className="h-6 w-px bg-white/30"></div>
+                {/* Spaceslam Logo */}
+                <div className="relative">
+                  <Image
+                    src="./spaceslamlogo.png"
+                    alt="Spaceslam Logo"
+                    width={140}
+                    height={140}
+                    className="pb-3"
+                  />
+                </div>
+                <div className="h-12 w-px bg-white/30"></div>
                 <div className="flex flex-col">
                   <span className="text-lg font-semibold text-purple-300">BrandVoice.ai</span>
                   <span className="text-sm text-gray-400">Content Repurposer</span>
                 </div>
               </div>
-              <p className="text-purple-300/80 text-sm mt-1">Space-tech content transformation</p>
+
             </div>
           </div>
           <ThemeToggle />

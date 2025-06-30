@@ -6,7 +6,17 @@ import { Textarea } from "@/components/ui/textarea"
 import { CopyButton } from "@/components/copy-button"
 import { Badge } from "@/components/ui/badge"
 import { Linkedin, Instagram, MessageCircle, Video, Sparkles } from "lucide-react"
-import type { GeneratedContent } from "@/lib/types"
+import type { GeneratedContent, CarouselSlide } from "@/lib/types"
+
+// Helper function to handle both string and object carousel slides
+const readableSlide = (slide: CarouselSlide): string => {
+  if (typeof slide === "string") {
+    return slide;
+  }
+
+  // Handle object format with heading and body
+  return `${slide.heading ?? ""}\n\n${slide.body ?? ""}`.trim();
+}
 
 interface ContentResultsProps {
   data: GeneratedContent
@@ -94,10 +104,10 @@ export function ContentResults({ data }: ContentResultsProps) {
                     </div>
                     <span className="text-white font-medium">Slide {index + 1}</span>
                   </div>
-                  <CopyButton text={slide} />
+                  <CopyButton text={readableSlide(slide)} />
                 </div>
                 <Textarea
-                  value={slide}
+                  value={readableSlide(slide)}
                   readOnly
                   className="bg-white/5 border-white/10 text-white resize-none focus:ring-pink-400/20 focus:border-pink-400"
                   rows={3}
