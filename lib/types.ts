@@ -1,4 +1,10 @@
-export type CarouselSlide = string | { heading?: string; body?: string;[key: string]: any };
+export type CarouselSlide = string | {
+  heading?: string;
+  body?: string;
+  imageUrl?: string;
+  imagePrompt?: string;
+  [key: string]: any
+};
 
 export interface GeneratedContent {
   /** Long-form text for LinkedIn. */

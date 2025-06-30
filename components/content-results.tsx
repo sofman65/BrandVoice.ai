@@ -5,8 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea"
 import { CopyButton } from "@/components/copy-button"
 import { Badge } from "@/components/ui/badge"
-import { Linkedin, Instagram, MessageCircle, Video, Sparkles } from "lucide-react"
+import { Linkedin, Instagram, MessageCircle, Video, Sparkles, ImageIcon } from "lucide-react"
 import type { GeneratedContent, CarouselSlide } from "@/lib/types"
+import Image from "next/image"
 
 // Helper function to handle both string and object carousel slides
 const readableSlide = (slide: CarouselSlide): string => {
@@ -16,6 +17,22 @@ const readableSlide = (slide: CarouselSlide): string => {
 
   // Handle object format with heading and body
   return `${slide.heading ?? ""}\n\n${slide.body ?? ""}`.trim();
+}
+
+// Helper to get image URL from slide
+const getSlideImage = (slide: CarouselSlide): string | null => {
+  if (typeof slide === "string") {
+    return null;
+  }
+  return slide.imageUrl || null;
+}
+
+// Helper to get image prompt from slide
+const getSlideImagePrompt = (slide: CarouselSlide): string | null => {
+  if (typeof slide === "string") {
+    return null;
+  }
+  return slide.imagePrompt || null;
 }
 
 interface ContentResultsProps {
@@ -94,26 +111,66 @@ export function ContentResults({ data }: ContentResultsProps) {
             </div>
             <CardDescription className="text-gray-400">Multi-slide storytelling content for Instagram</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {data.carousel.map((slide, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                      {index + 1}
+          <CardContent className="space-y-6">
+            {data.carousel.map((slide, index) => {
+              const imageUrl = getSlideImage(slide);
+              const imagePrompt = getSlideImagePrompt(slide);
+
+              return (
+                <div key={index} className="space-y-4 border border-white/10 rounded-lg p-4 bg-white/5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                        {index + 1}
+                      </div>
+                      <span className="text-white font-medium">Slide {index + 1}</span>
                     </div>
-                    <span className="text-white font-medium">Slide {index + 1}</span>
+                    <CopyButton text={readableSlide(slide)} />
                   </div>
-                  <CopyButton text={readableSlide(slide)} />
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Textarea
+                        value={readableSlide(slide)}
+                        readOnly
+                        className="bg-white/5 border-white/10 text-white resize-none focus:ring-pink-400/20 focus:border-pink-400 h-full min-h-[100px]"
+                      />
+                    </div>
+
+                    {imageUrl ? (
+                      <div className="relative h-[200px] rounded-lg overflow-hidden border border-white/10 bg-gradient-to-r from-pink-500/20 to-purple-500/20">
+                        <Image
+                          src={imageUrl}
+                          alt={typeof slide === 'string' ? slide : slide.heading || `Slide ${index + 1}`}
+                          fill
+                          style={{ objectFit: 'cover' }}
+                          className="hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                    ) : imagePrompt ? (
+                      <div className="flex items-center justify-center h-[200px] rounded-lg border border-white/10 bg-gradient-to-r from-pink-500/10 to-purple-500/10 p-4">
+                        <div className="text-center space-y-3">
+                          <ImageIcon className="h-8 w-8 mx-auto text-pink-400/60" />
+                          <p className="text-sm text-gray-400 italic">
+                            {imagePrompt.substring(0, 120)}...
+                          </p>
+                          <Badge variant="outline" className="text-xs mx-auto bg-white/5">
+                            Image generating
+                          </Badge>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-[200px] rounded-lg border border-white/10 bg-white/5 p-4">
+                        <div className="text-center space-y-3">
+                          <ImageIcon className="h-8 w-8 mx-auto text-gray-500/60" />
+                          <p className="text-sm text-gray-400">No image available</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <Textarea
-                  value={readableSlide(slide)}
-                  readOnly
-                  className="bg-white/5 border-white/10 text-white resize-none focus:ring-pink-400/20 focus:border-pink-400"
-                  rows={3}
-                />
-              </div>
-            ))}
+              );
+            })}
           </CardContent>
         </Card>
       </TabsContent>

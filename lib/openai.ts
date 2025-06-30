@@ -3,14 +3,15 @@ import "server-only"
 
 import type { GeneratedContent } from "./types"
 import { sleep } from "./utils"
-import { downloadInstagramVideo, validateVideoForTranscription, MetaGraphAPIError } from "./meta-graph"
+import { downloadInstagramVideo, validateVideoForTranscription, type MetaGraphAPIError } from "./meta-graph"
 import fs from "fs/promises"
 import path from "path"
 import { randomUUID } from "crypto"
+import { generateImagePrompts, generateImagesForSlides } from "./image-generator"
 
 let cachedClient: import("openai").default | null = null
 
-async function getOpenAI() {
+export async function getOpenAI() {
   if (cachedClient) return cachedClient
 
   if (!process.env.OPENAI_API_KEY) {
@@ -89,7 +90,8 @@ export async function transcribeAudio(mediaUrl: string): Promise<string> {
   } catch (error) {
     console.error("Transcription error:", error)
 
-    if (error instanceof MetaGraphAPIError) {
+    // Check if error is from Meta Graph API
+    if (error && typeof error === 'object' && 'name' in error && error.name === 'MetaGraphAPIError') {
       throw error
     }
 
@@ -128,42 +130,44 @@ export async function transcribeAudio(mediaUrl: string): Promise<string> {
  * Generate multi-platform content using GPT-4o-mini
  */
 export async function generateContent(caption: string, transcript?: string): Promise<GeneratedContent> {
-  // Mock mode
+  // Mock mode for development without API keys
   if (!process.env.OPENAI_API_KEY) {
-    await sleep(800)
-    return {
-      linkedin: `🚀 Exciting developments in the space-tech world! 
+    console.log("OpenAI not configured, using mock data")
+    await sleep(1000) // Simulate API delay
+
+    const mockContent = {
+      linkedin: `🚀 Exciting breakthrough in space technology! 
 
 ${caption}
 
-This innovation is pushing the boundaries of what's possible. The future of technology is literally out of this world! 🌌
+${transcript ? `As explained in the video: "${transcript.slice(0, 150)}..."` : ""}
 
-${transcript ? `\n\nKey insights from the video:\n• ${transcript.slice(0, 200)}...\n` : ""}
+This innovation is set to revolutionize how we approach space exploration and satellite deployment. The implications for global connectivity and scientific research are truly astronomical! 💫
 
-What are your thoughts on this breakthrough? Let's discuss in the comments!
+What do you think about this development? Would love to hear your thoughts in the comments!
 
-#SpaceTech #Innovation #TechTrends #FutureOfWork #DigitalTransformation #TechNews #BrandVoiceAI`,
+#SpaceTechnology #Innovation #FutureOfSpace #SatelliteTech #BrandVoice.ai`,
 
       carousel: [
         {
-          heading: "🚀 SPACE-TECH BREAKTHROUGH ALERT!",
-          body: "Something incredible just happened in the tech world that's about to change everything we know about productivity and innovation."
+          heading: "🚀 BREAKING: Space-Tech Revolution",
+          body: `${caption.slice(0, 100)}... This changes everything about how we approach space!`
         },
         {
-          heading: "💡 THE INNOVATION REVEALED",
-          body: "Here's what's changing the game and why it matters for the future of technology and business in our increasingly digital world."
+          heading: "The Challenge We've Been Facing",
+          body: "For decades, space technology has been limited by cost, weight, and deployment challenges. These constraints have held back innovation and practical applications."
         },
         {
-          heading: "🌌 REAL-WORLD IMPACT",
-          body: "This technology is already transforming how we work, create, and connect in the digital universe. Early adopters are seeing 10× results!"
+          heading: "Introducing the Game-Changer",
+          body: `${transcript ? `${transcript.slice(0, 150)}...` : "This new technology"} represents a paradigm shift in how we approach orbital deployments and space missions.`
         },
         {
-          heading: "⚡ WHY IT MATTERS NOW",
-          body: "The implications for businesses, creators, and innovators are absolutely massive and immediate. Don't get left behind in the space race."
+          heading: "Why This Matters for Everyone",
+          body: "Beyond the scientific community, this breakthrough will impact global communications, climate monitoring, and could accelerate our journey to becoming a multi-planetary species."
         },
         {
-          heading: "🔥 WHAT'S NEXT",
-          body: "Ready to be part of the space-tech revolution? Here's how to get started and stay ahead of the curve with these cosmic productivity hacks."
+          heading: "The Future is Looking Up 🌌",
+          body: "Follow @spaceslam for more cutting-edge space technology updates and insights that are changing our cosmic future!"
         }
       ],
 
@@ -194,7 +198,18 @@ ${transcript ? `Video highlights: ${transcript.slice(0, 100)}...\n\n` : ""}The f
 [END SCREEN]
 🎬 VISUAL: Subscribe animation with space theme
 🗣️ SCRIPT: "Don't miss the next space-tech revolution!"`,
-    }
+    };
+
+    // Generate image prompts for the carousel slides
+    const slidesWithPrompts = await generateImagePrompts(mockContent.carousel);
+
+    // Generate images for the slides
+    const slidesWithImages = await generateImagesForSlides(slidesWithPrompts);
+
+    return {
+      ...mockContent,
+      carousel: slidesWithImages
+    };
   }
 
   const openai = await getOpenAI()
@@ -294,6 +309,17 @@ Caption: ${caption}${transcript ? `\n\nVideo Transcript: ${transcript}` : ""}`
       })
     }
     parsed.carousel = parsed.carousel.slice(0, 5)
+
+    // Generate image prompts for the carousel slides
+    console.log("Generating image prompts for carousel slides...");
+    const slidesWithPrompts = await generateImagePrompts(parsed.carousel);
+
+    // Generate images for the slides
+    console.log("Generating images for carousel slides...");
+    const slidesWithImages = await generateImagesForSlides(slidesWithPrompts);
+
+    // Update the carousel with image URLs
+    parsed.carousel = slidesWithImages;
 
     return parsed
   } catch (error) {
