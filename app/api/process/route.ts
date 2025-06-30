@@ -3,8 +3,10 @@ import { fetchInstagram } from "@/lib/instagram"
 import { generateContent, transcribeAudio } from "@/lib/openai"
 import { checkRateLimit } from "@/lib/rate-limit"
 import { isValidInstagramUrl } from "@/lib/utils"
+import { MetaGraphAPIError } from "@/lib/meta-graph"
 
 export const runtime = "nodejs"
+export const maxDuration = 60 // Allow up to 60 seconds for video processing
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,7 +30,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Parse request body with error handling
+    // Parse request body
     let body
     try {
       body = await request.json()
@@ -64,23 +66,30 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if OpenAI API key is configured
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "OpenAI API key is not configured. Please add OPENAI_API_KEY to your environment variables.",
-        },
-        { status: 500 },
-      )
-    }
-
-    // Fetch Instagram data with error handling
+    // Fetch Instagram data
     let instagramData
     try {
+      console.log("Fetching Instagram data for:", url)
       instagramData = await fetchInstagram(url)
+      console.log("Instagram data fetched:", {
+        media_type: instagramData.media_type,
+        has_caption: !!instagramData.caption,
+        has_media_url: !!instagramData.media_url,
+        username: instagramData.username,
+      })
     } catch (fetchError) {
       console.error("Error fetching Instagram data:", fetchError)
+
+      if (fetchError instanceof Error) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: fetchError.message,
+          },
+          { status: 400 },
+        )
+      }
+
       return NextResponse.json(
         {
           success: false,
@@ -90,28 +99,51 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Transcribe audio if it's a video
+    // Transcribe audio if it's a video with media URL
     let transcript: string | undefined
-    if (instagramData.media_type === "video" && instagramData.audio_url) {
+    if (instagramData.media_type === "video" && instagramData.media_url) {
       try {
-        transcript = await transcribeAudio(instagramData.audio_url)
+        console.log("Starting video transcription...")
+        transcript = await transcribeAudio(instagramData.media_url)
+        console.log("Transcription completed, length:", transcript.length)
       } catch (transcribeError) {
         console.error("Error transcribing audio:", transcribeError)
-        // Continue without transcript rather than failing completely
+
+        // Don't fail the entire request if transcription fails
+        // Log the error and continue with just the caption
+        if (transcribeError instanceof MetaGraphAPIError) {
+          console.warn("Meta Graph API error during transcription:", transcribeError.message)
+        } else if (transcribeError instanceof Error) {
+          console.warn("Transcription error:", transcribeError.message)
+        }
+
         transcript = undefined
       }
     }
 
-    // Generate content with error handling
+    // Generate content
     let generatedContent
     try {
+      console.log("Generating content...")
       generatedContent = await generateContent(instagramData.caption, transcript)
+      console.log("Content generation completed")
     } catch (generateError) {
       console.error("Error generating content:", generateError)
+
+      if (generateError instanceof Error) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: generateError.message,
+          },
+          { status: 500 },
+        )
+      }
+
       return NextResponse.json(
         {
           success: false,
-          error: "Failed to generate content. Please check your OpenAI API key and try again.",
+          error: "Failed to generate content",
         },
         { status: 500 },
       )
@@ -121,6 +153,14 @@ export async function POST(request: NextRequest) {
       {
         success: true,
         data: generatedContent,
+        metadata: {
+          source_url: url,
+          media_type: instagramData.media_type,
+          username: instagramData.username,
+          has_transcript: !!transcript,
+          transcript_length: transcript?.length || 0,
+          timestamp: instagramData.timestamp,
+        },
       },
       {
         headers: {
@@ -131,7 +171,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Unexpected error in API route:", error)
 
-    // Ensure we always return valid JSON
     return NextResponse.json(
       {
         success: false,

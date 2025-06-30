@@ -118,18 +118,32 @@ export default function HomePage() {
 
       <div className="relative z-10 container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex flex-col items-center justify-between mb-15 w-full">
-          <div className="flex flex-col items-center gap-5 w-full">
+        <div className="flex items-center justify-between mb-12">
+          <div className="flex items-center gap-6">
+            {/* Spaceslam Logo */}
             <div className="relative">
               <Image
-                src="./spaceslamlogo.png"
+                src="/spaceslam-logo.svg"
                 alt="Spaceslam Logo"
-                width={240}
-                height={240}
-                className="h-12 w-auto object-contain mx-auto"
+                width={80}
+                height={80}
+                className="filter brightness-0 invert"
               />
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-white text-center w-full">BrandVoice.ai</h1>
+            {/* Brand Hierarchy */}
+            <div className="flex flex-col">
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold text-white">
+                  Space<span className="text-purple-400">slam</span>
+                </h1>
+                <div className="h-6 w-px bg-white/30"></div>
+                <div className="flex flex-col">
+                  <span className="text-lg font-semibold text-purple-300">BrandVoice.ai</span>
+                  <span className="text-sm text-gray-400">Content Repurposer</span>
+                </div>
+              </div>
+              <p className="text-purple-300/80 text-sm mt-1">Space-tech content transformation</p>
+            </div>
           </div>
           <ThemeToggle />
         </div>
@@ -139,7 +153,7 @@ export default function HomePage() {
           <div className="text-center space-y-6">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/20 border border-purple-500/30 rounded-full text-purple-300 text-sm font-medium">
               <Sparkles className="h-4 w-4" />
-              Powered by Sofianos Lampropoulos
+              Powered by Spaceslam Technology
             </div>
             <h2 className="text-5xl md:text-6xl font-bold text-white leading-tight">
               Transform Your
@@ -148,8 +162,8 @@ export default function HomePage() {
               </span>
             </h2>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              Launch your content into the stratosphere. Convert any Instagram post into multi-platform content that
-              reaches every corner of the digital universe.
+              Launch your content into the stratosphere with BrandVoice.ai. Convert any Instagram post into
+              multi-platform content that reaches every corner of the digital universe.
             </p>
           </div>
 
@@ -273,7 +287,8 @@ export default function HomePage() {
           {/* Footer */}
           <div className="text-center py-8">
             <p className="text-gray-400">
-              Powered by <span className="text-purple-400 font-semibold">Spaceslam</span> • Built with{" "}
+              Powered by <span className="text-purple-400 font-semibold">Spaceslam</span> •
+              <span className="text-pink-400 font-semibold"> BrandVoice.ai</span> • Built with{" "}
               <span className="text-pink-400">❤️</span> for content creators
             </p>
           </div>

@@ -1,168 +1,163 @@
-# Spaceslam Content Repurposer
+# BrandVoice.ai - Instagram Content Repurposer
 
-Transform any Instagram post into cross-platform content in seconds! This full-stack Next.js application uses AI to generate LinkedIn posts, Instagram carousels, Threads posts, and video scripts from Instagram URLs.
+Transform your Instagram posts into multi-platform content with AI-powered technology from Spaceslam.
 
-## Features
+## 🚀 Features
 
-- 🚀 **Multi-channel Content Generation**: Convert Instagram posts to LinkedIn, Carousel, Threads, and Video Script formats
-- 🎯 **AI-Powered**: Uses OpenAI GPT-4o-mini for intelligent content transformation
-- 🎨 **Modern UI**: Built with shadcn/ui components and Tailwind CSS
-- 🌙 **Dark Mode**: Full dark mode support with next-themes
-- 📱 **Responsive Design**: Mobile-first responsive design
-- ⚡ **Rate Limiting**: Built-in rate limiting (30 requests/hour per IP)
-- 🔄 **Real-time Updates**: React Query for efficient data fetching and caching
-- ♿ **Accessible**: WCAG compliant with proper ARIA labels and keyboard navigation
+- **Instagram Integration**: Fetch posts and videos using Meta Graph API
+- **AI Transcription**: Convert Instagram videos to text using OpenAI Whisper-1
+- **Multi-Platform Content**: Generate LinkedIn posts, Instagram carousels, Threads posts, and video scripts
+- **Space-Tech Branding**: Energetic, innovative content optimized for Spaceslam's brand voice
+- **Rate Limiting**: Built-in protection against API abuse
+- **Error Handling**: Comprehensive error management for all integrations
 
-## Tech Stack
+## 🛠 Setup
 
-- **Framework**: Next.js 14 with App Router
-- **Language**: TypeScript (strict mode)
-- **Styling**: Tailwind CSS + shadcn/ui
-- **AI**: OpenAI GPT-4o-mini
-- **State Management**: TanStack Query (React Query)
-- **Theme**: next-themes
-- **Icons**: Lucide React + React Icons
-- **Testing**: Vitest
+### Prerequisites
 
-## Quick Start
+- Node.js 18+ 
+- npm/pnpm/yarn
+- OpenAI API key
+- Meta Graph API access token
+- Instagram Basic Display API access (optional)
 
-1. **Clone and install dependencies**:
-   \`\`\`bash
-   git clone <repository-url>
-   cd spaceslam-content-repurposer
-   pnpm install
-   \`\`\`
+### Environment Variables
 
-2. **Set up environment variables**:
-   \`\`\`bash
-   cp .env.example .env.local
-   \`\`\`
-   
-   Add your OpenAI API key to `.env.local`:
-   \`\`\`
-   OPENAI_API_KEY=your_openai_api_key_here
-   \`\`\`
+Create a `.env.local` file with the following variables:
 
-3. **Run the development server**:
-   \`\`\`bash
-   pnpm dev
-   \`\`\`
+\`\`\`env
+# OpenAI Configuration
+OPENAI_API_KEY=your_openai_api_key_here
 
-4. **Open your browser**:
-   Navigate to [http://localhost:3000](http://localhost:3000)
+# Meta Graph API Configuration  
+META_ACCESS_TOKEN=your_meta_access_token_here
+META_APP_ID=your_meta_app_id_here
+META_APP_SECRET=your_meta_app_secret_here
 
-## Usage
+# Instagram Basic Display API (optional)
+INSTAGRAM_ACCESS_TOKEN=your_instagram_access_token_here
 
-1. Paste an Instagram post or reel URL into the input field
-2. Click "Generate" to process the content
-3. View the generated content across different tabs (LinkedIn, Carousel, Threads, Video Script)
-4. Use the copy buttons to copy content to your clipboard
-5. Paste the content into your preferred social media platforms
-
-## API Endpoints
-
-### POST /api/process
-
-Processes an Instagram URL and generates multi-channel content.
-
-**Request Body**:
-\`\`\`json
-{
-  "url": "https://instagram.com/p/example"
-}
+# Rate Limiting (optional)
+RATE_LIMIT_MAX=30
+RATE_LIMIT_WINDOW=3600000
 \`\`\`
 
-**Response**:
-\`\`\`json
-{
-  "success": true,
-  "data": {
-    "linkedin": "Professional LinkedIn post content...",
-    "carousel": ["Slide 1", "Slide 2", "Slide 3", "Slide 4", "Slide 5"],
-    "threads": "Threads post content...",
-    "video_script": "Video script with cues and shots..."
-  }
-}
-\`\`\`
-
-## Development
-
-### Project Structure
-
-\`\`\`
-src/
-├── app/                 # Next.js App Router pages and API routes
-├── components/          # Reusable React components
-│   └── ui/             # shadcn/ui components
-├── lib/                # Utility functions and configurations
-└── styles/             # Global styles
-\`\`\`
-
-### Key Components
-
-- **HomePage**: Main application interface with form and results
-- **ContentResults**: Tabbed interface for displaying generated content
-- **CopyButton**: Reusable copy-to-clipboard functionality
-- **ThemeToggle**: Dark/light mode toggle
-
-### Testing
-
-Run the test suite:
-\`\`\`bash
-pnpm test
-\`\`\`
-
-### Linting and Formatting
+### Installation
 
 \`\`\`bash
-pnpm lint
-pnpm format
+# Install dependencies
+pnpm install
+
+# Run development server
+pnpm dev
+
+# Build for production
+pnpm build
+
+# Start production server
+pnpm start
 \`\`\`
 
-## Environment Variables
+## 🔧 API Configuration
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `OPENAI_API_KEY` | OpenAI API key for content generation | Yes |
-| `IG_ACCESS_TOKEN` | Instagram API token (future feature) | No |
-| `NEXT_PUBLIC_APP_URL` | Application URL for metadata | No |
+### Meta Graph API Setup
 
-## Rate Limiting
+1. Create a Facebook App at [developers.facebook.com](https://developers.facebook.com)
+2. Add Instagram Basic Display product
+3. Configure Instagram Basic Display settings
+4. Generate access tokens
+5. Add your app to Instagram's allowlist
 
-The application implements in-memory rate limiting:
-- **Limit**: 30 requests per hour per IP address
-- **Window**: 1 hour rolling window
-- **Response**: 429 status code when limit exceeded
+### OpenAI API Setup
 
-## Deployment
+1. Create an account at [platform.openai.com](https://platform.openai.com)
+2. Generate an API key
+3. Ensure you have credits for GPT-4o-mini and Whisper-1 usage
+
+## 📱 Supported Instagram Formats
+
+- **Posts**: `https://www.instagram.com/p/ABC123/`
+- **Reels**: `https://www.instagram.com/reel/ABC123/`
+- **IGTV**: `https://www.instagram.com/tv/ABC123/`
+- **Query Parameters**: URLs with `?hl=en` and other parameters
+
+## 🎯 Generated Content Types
+
+### LinkedIn Posts
+- Professional tone with space-tech energy
+- Relevant hashtags and engagement hooks
+- BrandVoice.ai branding integration
+
+### Instagram Carousels  
+- 5 engaging slides with complete copy
+- Story-driven content structure
+- Space-tech terminology and emojis
+
+### Threads Posts
+- Conversational tone under 500 characters
+- Relevant hashtags and engagement
+- Community-focused messaging
+
+### Video Scripts
+- Complete scripts with timing and visual cues
+- Clear call-to-actions
+- Spaceslam branding integration
+
+## 🔒 Security & Privacy
+
+- Server-only API integrations
+- Temporary file cleanup for video processing
+- Rate limiting protection
+- Comprehensive error handling
+- No client-side API key exposure
+
+## 🚀 Deployment
 
 ### Vercel (Recommended)
 
-1. Push your code to GitHub
-2. Connect your repository to Vercel
-3. Add environment variables in Vercel dashboard
-4. Deploy automatically on push
+\`\`\`bash
+# Deploy to Vercel
+vercel --prod
 
-### Other Platforms
+# Set environment variables in Vercel dashboard
+\`\`\`
 
-The application can be deployed on any platform that supports Next.js:
-- Netlify
-- Railway
-- DigitalOcean App Platform
-- AWS Amplify
+### Docker
 
-## Contributing
+\`\`\`bash
+# Build Docker image
+docker build -t brandvoice-ai .
+
+# Run container
+docker run -p 3000:3000 --env-file .env.local brandvoice-ai
+\`\`\`
+
+## 📊 Monitoring & Analytics
+
+- Built-in error logging
+- API usage tracking
+- Rate limit monitoring
+- Performance metrics
+
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit your changes: `git commit -m 'Add amazing feature'`
-4. Push to the branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-## License
+## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Copyright © 2024 Spaceslam. All rights reserved.
 
-## Support
+## 🆘 Support
 
-For support, email support@spaceslam.com or open an issue on GitHub.
+For support and questions:
+- Email: support@space-slam.com
+- Website: [space-slam.com](https://space-slam.com)
+- Documentation: [docs.brandvoice.ai](https://docs.brandvoice.ai)
+
+---
+
+Built with ❤️ by [Spaceslam](https://space-slam.com) for the future of content creation.
