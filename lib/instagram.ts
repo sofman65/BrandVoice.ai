@@ -78,5 +78,3 @@ export async function fetchInstagram(url: string): Promise<{
     throw new Error("Failed to fetch Instagram post data")
   }
 }
-
-
