@@ -168,9 +168,11 @@ export async function generateImagesForSlides(slides: CarouselSlide[]): Promise<
                 : slide
 
             // Generate image prompt if needed
-            if (!slideObj.imagePrompt) {
+            if (typeof slideObj !== 'string' && !slideObj.imagePrompt) {
                 const slidesWithPrompts = await generateImagePrompts([slideObj])
-                slideObj.imagePrompt = slidesWithPrompts[0].imagePrompt
+                if (slidesWithPrompts[0] && typeof slidesWithPrompts[0] !== 'string' && 'imagePrompt' in slidesWithPrompts[0]) {
+                    slideObj.imagePrompt = (slidesWithPrompts[0] as { imagePrompt?: string }).imagePrompt
+                }
             }
 
             // Generate the image
@@ -190,7 +192,7 @@ export async function generateImagesForSlides(slides: CarouselSlide[]): Promise<
             })
 
             // Save the image
-            const imageData = response.data[0]?.b64_json
+            const imageData = response.data && response.data[0]?.b64_json
             if (imageData) {
                 const buffer = Buffer.from(imageData, 'base64')
                 await fs.writeFile(imagePath, buffer)
