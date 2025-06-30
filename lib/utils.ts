@@ -12,6 +12,16 @@ export function isValidInstagramUrl(url: string): boolean {
   return regex.test(url.trim())
 }
 
+/**
+ * Validate a YouTube URL.
+ * Supports standard youtube.com/watch?v=<id>, youtu.be/<id>, 
+ * youtube.com/shorts/<id>, and youtube.com/embed/<id> formats.
+ */
+export function isValidYouTubeUrl(url: string): boolean {
+  const regex = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(\S*)?$/
+  return regex.test(url.trim())
+}
+
 /** Sleep helper (mainly for stubbing async work). */
 export async function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms))

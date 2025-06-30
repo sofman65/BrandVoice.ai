@@ -1,8 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { fetchInstagram } from "@/lib/instagram"
+import { fetchYouTubeData } from "@/lib/youtube"
 import { generateContent, transcribeAudio } from "@/lib/openai"
 import { checkRateLimit } from "@/lib/rate-limit"
-import { isValidInstagramUrl } from "@/lib/utils"
+import { isValidInstagramUrl, isValidYouTubeUrl } from "@/lib/utils"
 import { MetaGraphAPIError } from "@/lib/meta-graph"
 
 export const runtime = "nodejs"
@@ -50,35 +51,95 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Instagram URL is required",
+          error: "URL is required",
         },
         { status: 400 },
       )
     }
 
-    if (!isValidInstagramUrl(url)) {
+    // Determine the URL type and validate
+    const isInstagram = isValidInstagramUrl(url)
+    const isYouTube = isValidYouTubeUrl(url)
+
+    if (!isInstagram && !isYouTube) {
       return NextResponse.json(
         {
           success: false,
-          error: "Invalid Instagram URL format",
+          error: "Invalid URL format. Please provide a valid Instagram or YouTube URL.",
         },
         { status: 400 },
       )
     }
 
-    // Fetch Instagram data
-    let instagramData
+    // Fetch content data based on URL type
+    let sourceData: any = {}
+    let transcript: string | undefined
+
     try {
-      console.log("Fetching Instagram data for:", url)
-      instagramData = await fetchInstagram(url)
-      console.log("Instagram data fetched:", {
-        media_type: instagramData.media_type,
-        has_caption: !!instagramData.caption,
-        has_media_url: !!instagramData.media_url,
-        username: instagramData.username,
-      })
+      if (isInstagram) {
+        // Fetch Instagram data
+        console.log("Fetching Instagram data for:", url)
+        const instagramData = await fetchInstagram(url)
+        console.log("Instagram data fetched:", {
+          media_type: instagramData.media_type,
+          has_caption: !!instagramData.caption,
+          has_media_url: !!instagramData.media_url,
+          username: instagramData.username,
+        })
+
+        // Transcribe audio if it's a video with media URL
+        if (instagramData.media_type === "video" && instagramData.media_url) {
+          try {
+            console.log("Starting video transcription...")
+            transcript = await transcribeAudio(instagramData.media_url)
+            console.log("Transcription completed, length:", transcript.length)
+          } catch (transcribeError) {
+            console.error("Error transcribing audio:", transcribeError)
+
+            // Don't fail the entire request if transcription fails
+            // Log the error and continue with just the caption
+            if (typeof transcribeError === 'object' &&
+              transcribeError !== null &&
+              'message' in transcribeError) {
+              console.warn("Transcription error:", (transcribeError as Error).message)
+            }
+
+            transcript = undefined
+          }
+        }
+
+        sourceData = {
+          content: instagramData.caption,
+          source_type: "instagram",
+          media_type: instagramData.media_type,
+          username: instagramData.username,
+          timestamp: instagramData.timestamp,
+        }
+      } else if (isYouTube) {
+        // Fetch YouTube data
+        console.log("Fetching YouTube data for:", url)
+        const youtubeData = await fetchYouTubeData(url)
+        console.log("YouTube data fetched:", {
+          title: youtubeData.title,
+          has_description: !!youtubeData.description,
+          has_transcript: !!youtubeData.transcript,
+          channel: youtubeData.channelTitle,
+        })
+
+        // Use the transcript from YouTube data
+        transcript = youtubeData.transcript
+
+        sourceData = {
+          content: `${youtubeData.title}\n\n${youtubeData.description || ''}`,
+          source_type: "youtube",
+          media_type: "video",
+          username: youtubeData.channelTitle,
+          timestamp: youtubeData.publishedAt,
+          video_id: youtubeData.videoId,
+        }
+      }
     } catch (fetchError) {
-      console.error("Error fetching Instagram data:", fetchError)
+      console.error("Error fetching content data:", fetchError)
 
       if (fetchError instanceof Error) {
         return NextResponse.json(
@@ -93,39 +154,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Failed to fetch Instagram post data",
+          error: `Failed to fetch ${isInstagram ? 'Instagram' : 'YouTube'} data`,
         },
         { status: 500 },
       )
-    }
-
-    // Transcribe audio if it's a video with media URL
-    let transcript: string | undefined
-    if (instagramData.media_type === "video" && instagramData.media_url) {
-      try {
-        console.log("Starting video transcription...")
-        transcript = await transcribeAudio(instagramData.media_url)
-        console.log("Transcription completed, length:", transcript.length)
-      } catch (transcribeError) {
-        console.error("Error transcribing audio:", transcribeError)
-
-        // Don't fail the entire request if transcription fails
-        // Log the error and continue with just the caption
-        if (transcribeError instanceof MetaGraphAPIError) {
-          console.warn("Meta Graph API error during transcription:", transcribeError.message)
-        } else if (transcribeError instanceof Error) {
-          console.warn("Transcription error:", transcribeError.message)
-        }
-
-        transcript = undefined
-      }
     }
 
     // Generate content
     let generatedContent
     try {
       console.log("Generating content...")
-      generatedContent = await generateContent(instagramData.caption, transcript)
+      generatedContent = await generateContent(sourceData.content, transcript)
       console.log("Content generation completed")
     } catch (generateError) {
       console.error("Error generating content:", generateError)
@@ -155,11 +194,13 @@ export async function POST(request: NextRequest) {
         data: generatedContent,
         metadata: {
           source_url: url,
-          media_type: instagramData.media_type,
-          username: instagramData.username,
+          source_type: sourceData.source_type,
+          media_type: sourceData.media_type,
+          username: sourceData.username,
           has_transcript: !!transcript,
           transcript_length: transcript?.length || 0,
-          timestamp: instagramData.timestamp,
+          timestamp: sourceData.timestamp,
+          video_id: sourceData.video_id || null,
         },
       },
       {

@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, Sparkles, Rocket, Zap, Globe, Video } from "lucide-react"
+import { Loader2, Sparkles, Rocket, Zap, Globe, Video, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
-import { isValidInstagramUrl } from "@/lib/utils"
+import { isValidInstagramUrl, isValidYouTubeUrl } from "@/lib/utils"
 import { InstagramPreview } from "@/components/instagram-preview"
+import { YouTubePreview } from "@/components/youtube-preview"
 import { ContentResults } from "@/components/content-results"
 import { ThemeToggle } from "@/components/theme-toggle"
 import type { GeneratedContent } from "@/lib/types"
@@ -26,15 +27,16 @@ export default function HomePage() {
   const [url, setUrl] = useState("")
   const [showPreview, setShowPreview] = useState(false)
   const [previewData, setPreviewData] = useState<any>(null)
+  const [sourceType, setSourceType] = useState<"instagram" | "youtube" | null>(null)
 
   const mutation = useMutation({
-    mutationFn: async (instagramUrl: string): Promise<GeneratedContent> => {
+    mutationFn: async (contentUrl: string): Promise<GeneratedContent> => {
       const response = await fetch("/api/process", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ url: instagramUrl }),
+        body: JSON.stringify({ url: contentUrl }),
       })
 
       if (!response.ok) {
@@ -49,7 +51,7 @@ export default function HomePage() {
       }
 
       if (!data.success || !data.data) {
-        throw new Error(data.error || "Failed to process Instagram post")
+        throw new Error(data.error || "Failed to process content")
       }
 
       return data.data
@@ -66,8 +68,12 @@ export default function HomePage() {
   const handleUrlChange = (value: string) => {
     setUrl(value)
 
-    if (value && isValidInstagramUrl(value)) {
-      // Simulate preview loading
+    // Determine URL type
+    const isInstagram = isValidInstagramUrl(value)
+    const isYouTube = isValidYouTubeUrl(value)
+
+    if (value && isInstagram) {
+      setSourceType("instagram")
       setShowPreview(true)
       setTimeout(() => {
         setPreviewData({
@@ -78,7 +84,20 @@ export default function HomePage() {
           timestamp: new Date().toISOString(),
         })
       }, 500)
+    } else if (value && isYouTube) {
+      setSourceType("youtube")
+      setShowPreview(true)
+      setTimeout(() => {
+        setPreviewData({
+          title: "How to Improve Your Development Workflow",
+          channelTitle: "CodeWithMe",
+          thumbnail: `https://i.ytimg.com/vi/${value.split("v=")[1] || "dQw4w9WgXcQ"}/maxresdefault.jpg`,
+          description: "In this video, I share my top tips for improving your development workflow with these amazing tools! 🚀 #coding #productivity",
+          publishedAt: new Date().toISOString(),
+        })
+      }, 500)
     } else {
+      setSourceType(null)
       setShowPreview(false)
       setPreviewData(null)
     }
@@ -88,12 +107,12 @@ export default function HomePage() {
     e.preventDefault()
 
     if (!url) {
-      toast.error("Please enter an Instagram URL")
+      toast.error("Please enter a URL")
       return
     }
 
-    if (!isValidInstagramUrl(url)) {
-      toast.error("Please enter a valid Instagram URL")
+    if (!isValidInstagramUrl(url) && !isValidYouTubeUrl(url)) {
+      toast.error("Please enter a valid Instagram or YouTube URL")
       return
     }
 
@@ -102,6 +121,7 @@ export default function HomePage() {
 
   const handleReset = () => {
     setUrl("")
+    setSourceType(null)
     setShowPreview(false)
     setPreviewData(null)
     mutation.reset()
@@ -156,11 +176,11 @@ export default function HomePage() {
             <h2 className="text-5xl md:text-6xl font-bold text-white leading-tight">
               Transform Your
               <span className="block bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
-                Instagram Content
+                Social Content
               </span>
             </h2>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              Launch your content into the stratosphere with BrandVoice.ai. Convert any Instagram post into
+              Launch your content into the stratosphere with BrandVoice.ai. Convert any Instagram post or YouTube video into
               multi-platform content that reaches every corner of the digital universe.
             </p>
           </div>
@@ -170,7 +190,7 @@ export default function HomePage() {
             <CardHeader className="text-center pb-8">
               <CardTitle className="text-2xl font-bold text-white mb-2">Mission Control Center</CardTitle>
               <CardDescription className="text-gray-300 text-lg">
-                Enter Instagram coordinates to begin content transformation
+                Enter Instagram or YouTube URL to begin content transformation
               </CardDescription>
             </CardHeader>
 
@@ -179,13 +199,13 @@ export default function HomePage() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-3">
                   <Label htmlFor="instagram-url" className="text-white font-medium text-lg">
-                    Instagram Post URL
+                    URL
                   </Label>
                   <div className="flex gap-4">
                     <Input
                       id="instagram-url"
                       type="url"
-                      placeholder="https://www.instagram.com/p/..."
+                      placeholder="https://www.instagram.com/p/... or https://www.youtube.com/watch?v=..."
                       value={url}
                       onChange={(e) => handleUrlChange(e.target.value)}
                       className="flex-1 h-14 text-lg bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-400 focus:ring-purple-400/20"
@@ -212,8 +232,25 @@ export default function HomePage() {
                 </div>
               </form>
 
-              {/* Instagram Preview */}
-              {showPreview && <InstagramPreview url={url} data={previewData} isLoading={!previewData} />}
+              {/* Instagram/YouTube Preview */}
+              {showPreview && (
+                <div className="bg-white/10 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-xl font-bold text-white">
+                      {sourceType === "instagram" ? "Instagram Preview" : "YouTube Preview"}
+                    </h4>
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300">
+                      {sourceType === "instagram" ? "Instagram Post" : "YouTube Video"}
+                    </span>
+                  </div>
+
+                  {sourceType === "instagram" ? (
+                    <InstagramPreview url={url} data={previewData} isLoading={!previewData} />
+                  ) : (
+                    <YouTubePreview url={url} data={previewData} isLoading={!previewData} />
+                  )}
+                </div>
+              )}
 
               {/* Results */}
               {mutation.data && (
