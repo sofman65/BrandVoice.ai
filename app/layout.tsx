@@ -9,22 +9,22 @@ import { Toaster } from "@/components/ui/sonner"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "BrandVoice.ai - Instagram Content Repurposer | Spaceslam",
+  title: "BrandVoice.ai - Content Repurposer ",
   description:
-    "Transform your Instagram posts into multi-platform content with AI. Generate LinkedIn posts, Instagram carousels, Threads posts, and video scripts instantly.",
+    "Transform posts into multi-platform content with AI. Generate LinkedIn posts, Instagram carousels, Threads posts, and video scripts instantly.",
   keywords: [
     "Instagram content repurposer",
     "AI content generation",
     "social media automation",
     "multi-platform content",
     "BrandVoice.ai",
-    "Spaceslam",
+    "Sofianos Lampropoulos",
     "content marketing",
     "social media tools",
   ],
-  authors: [{ name: "Spaceslam", url: "https://space-slam.com" }],
-  creator: "Spaceslam",
-  publisher: "Spaceslam",
+  authors: [{ name: "Sofianos Lampropoulos", url: "https://sofianos-lampropoulos.com" }],
+  creator: "Sofianos Lampropoulos",
+  publisher: "Sofianos Lampropoulos",
   robots: {
     index: true,
     follow: true,
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
     siteName: "BrandVoice.ai",
     images: [
       {
-        url: "/spaceslam-logo.svg",
+        url: "/sl-logo.svg",
         width: 1200,
         height: 630,
         alt: "BrandVoice.ai by Spaceslam",
@@ -57,9 +57,10 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "BrandVoice.ai - Instagram Content Repurposer",
     description: "Transform your Instagram posts into multi-platform content with AI.",
-    images: ["/spaceslam-logo.svg"],
+    images: ["/sl-logo.svg"],
     creator: "@spaceslam",
   },
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
   generator: 'v0.dev'
 }
 

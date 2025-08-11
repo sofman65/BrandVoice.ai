@@ -146,14 +146,14 @@ export default function HomePage() {
             {/* Brand Hierarchy */}
             <div className="flex flex-col">
               <div className="flex items-center gap-3">
-                {/* Spaceslam Logo */}
-                <div className="relative">
+                {/* SL Logo */}
+                <div className="relative p-2 ">
                   <Image
-                    src="./spaceslamlogo.png"
+                    src="/sl-logo.svg"
                     alt="Spaceslam Logo"
                     width={140}
                     height={140}
-                    className="pb-3"
+                    className="pb-3  dark:invert"
                   />
                 </div>
                 <div className="h-12 w-px bg-white/30"></div>
@@ -324,7 +324,7 @@ export default function HomePage() {
           {/* Footer */}
           <div className="text-center py-8">
             <p className="text-gray-400">
-              Powered by <span className="text-purple-400 font-semibold">Spaceslam</span> •
+              Powered by <span className="text-purple-400 font-semibold">Sofianos Lampropoulos</span> •
               <span className="text-pink-400 font-semibold"> BrandVoice.ai</span> • Built with{" "}
               <span className="text-pink-400">❤️</span> for content creators
             </p>
