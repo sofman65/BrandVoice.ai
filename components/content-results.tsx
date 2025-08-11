@@ -7,6 +7,8 @@ import { CopyButton } from "@/components/copy-button"
 import { Badge } from "@/components/ui/badge"
 import { Linkedin, Instagram, MessageCircle, Video, Sparkles, ImageIcon } from "lucide-react"
 import type { GeneratedContent, CarouselSlide } from "@/lib/types"
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
 import Image from "next/image"
 
 // Helper function to handle both string and object carousel slides
@@ -40,6 +42,30 @@ interface ContentResultsProps {
 }
 
 export function ContentResults({ data }: ContentResultsProps) {
+  const [slides, setSlides] = useState<CarouselSlide[]>(data.carousel)
+  const [isGenerating, setIsGenerating] = useState(false)
+
+  const anyMissingImages = slides.some((s) => typeof s !== 'string' && !s.imageUrl)
+
+  const triggerImageGeneration = async () => {
+    try {
+      setIsGenerating(true)
+      const response = await fetch("/api/images/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slides }),
+      })
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      const payload = await response.json()
+      if (!payload.success) throw new Error(payload.error || "Failed to generate images")
+      setSlides(payload.slides)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
   return (
     <Tabs defaultValue="linkedin" className="w-full">
       <TabsList className="grid w-full grid-cols-4 bg-white/10 backdrop-blur-sm border-white/20">
@@ -105,14 +131,22 @@ export function ContentResults({ data }: ContentResultsProps) {
                 <Instagram className="h-5 w-5 text-pink-400" />
                 <CardTitle className="text-white">Instagram Carousel</CardTitle>
                 <Badge variant="secondary" className="bg-pink-500/20 text-pink-300 border-pink-500/30">
-                  {data.carousel.length} slides
+                  {slides.length} slides
                 </Badge>
               </div>
             </div>
             <CardDescription className="text-gray-400">Multi-slide storytelling content for Instagram</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {data.carousel.map((slide, index) => {
+            {anyMissingImages && (
+              <div className="flex items-center justify-end">
+                <Button onClick={triggerImageGeneration} disabled={isGenerating} className="bg-pink-600 hover:bg-pink-700">
+                  {isGenerating ? "Generating images..." : "Generate images"}
+                </Button>
+              </div>
+            )}
+
+            {slides.map((slide, index) => {
               const imageUrl = getSlideImage(slide);
               const imagePrompt = getSlideImagePrompt(slide);
 
@@ -155,7 +189,7 @@ export function ContentResults({ data }: ContentResultsProps) {
                             {imagePrompt.substring(0, 120)}...
                           </p>
                           <Badge variant="outline" className="text-xs mx-auto bg-white/5">
-                            Image generating
+                            {isGenerating ? "Generating..." : "Ready to generate"}
                           </Badge>
                         </div>
                       </div>

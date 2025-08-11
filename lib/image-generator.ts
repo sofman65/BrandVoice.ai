@@ -125,7 +125,12 @@ function getSlidePosition(index: number): string {
 /**
  * Generate images for carousel slides
  */
-export async function generateImagesForSlides(slides: CarouselSlide[]): Promise<CarouselSlide[]> {
+type ImageStorageMode = "fs" | "data";
+
+export async function generateImagesForSlides(
+    slides: CarouselSlide[],
+    options?: { storage?: ImageStorageMode; concurrency?: number; timeoutMs?: number }
+): Promise<CarouselSlide[]> {
     // Get OpenAI client
     const { getOpenAI } = await import("./openai")
     const openai = await getOpenAI()
@@ -149,13 +154,29 @@ export async function generateImagesForSlides(slides: CarouselSlide[]): Promise<
         })
     }
 
-    // Ensure image directory exists
-    const publicDir = path.join(process.cwd(), "public")
-    const imageDir = path.join(publicDir, "generated-images")
-    await fs.mkdir(imageDir, { recursive: true })
+    const storageMode: ImageStorageMode = options?.storage
+        || (process.env.VERCEL ? "data" : "fs")
+    const concurrency = Math.max(1, Math.min(options?.concurrency ?? 2, 5))
+    const timeoutMs = Math.max(10_000, options?.timeoutMs ?? 45_000)
 
-    // Generate images for each slide
-    const slidesWithImages = await Promise.all(slides.map(async (slide, index) => {
+    let imageDir = ""
+    if (storageMode === "fs") {
+        // Ensure image directory exists (local/dev only)
+        const publicDir = path.join(process.cwd(), "public")
+        imageDir = path.join(publicDir, "generated-images")
+        await fs.mkdir(imageDir, { recursive: true })
+    }
+
+    // Helper: run with timeout
+    const withTimeout = async <T>(p: Promise<T>): Promise<T> => {
+        return await Promise.race<T>([
+            p,
+            new Promise<T>((_, reject) => setTimeout(() => reject(new Error("image_generation_timeout")), timeoutMs)) as Promise<T>,
+        ])
+    }
+
+    // Worker function for a single slide
+    const processOne = async (slide: CarouselSlide, index: number): Promise<CarouselSlide> => {
         try {
             // Skip if already has an image URL
             if (typeof slide !== 'string' && slide.imageUrl) {
@@ -175,36 +196,34 @@ export async function generateImagesForSlides(slides: CarouselSlide[]): Promise<
                 }
             }
 
-            // Generate the image
-            const timestamp = Date.now()
-            const imageFilename = `slide-${index + 1}-${timestamp}.png`
-            const imagePath = path.join(imageDir, imageFilename)
-            const imageUrl = `/generated-images/${imageFilename}`
-
             // Call DALL-E to generate image
-            const response = await openai.images.generate({
+            const response = await withTimeout(openai.images.generate({
                 model: "dall-e-3",
                 prompt: slideObj.imagePrompt || `A futuristic visualization of space technology, slide ${index + 1}`,
                 n: 1,
                 size: "1024x1024",
                 quality: "standard",
                 response_format: "b64_json",
-            })
+            }))
 
-            // Save the image
             const imageData = response.data && response.data[0]?.b64_json
-            if (imageData) {
-                const buffer = Buffer.from(imageData, 'base64')
-                await fs.writeFile(imagePath, buffer)
-
-                // Add the image URL to the slide
-                return {
-                    ...slideObj,
-                    imageUrl
-                }
+            if (!imageData) {
+                return slideObj
             }
 
-            return slideObj
+            // Persist based on storage mode
+            if (storageMode === "fs") {
+                const timestamp = Date.now()
+                const imageFilename = `slide-${index + 1}-${timestamp}.png`
+                const imagePath = path.join(imageDir, imageFilename)
+                const buffer = Buffer.from(imageData, 'base64')
+                await fs.writeFile(imagePath, buffer)
+                const imageUrl = `/generated-images/${imageFilename}`
+                return { ...slideObj, imageUrl }
+            } else {
+                const dataUrl = `data:image/png;base64,${imageData}`
+                return { ...slideObj, imageUrl: dataUrl }
+            }
         } catch (error) {
             console.error(`Error generating image for slide ${index}:`, error)
             // Return the original slide if there's an error
@@ -212,7 +231,20 @@ export async function generateImagesForSlides(slides: CarouselSlide[]): Promise<
                 ? { heading: "Slide " + (index + 1), body: slide }
                 : slide
         }
-    }))
+    }
 
-    return slidesWithImages
+    // Run with limited concurrency
+    const results: CarouselSlide[] = []
+    let i = 0
+    async function runNext(): Promise<void> {
+        const current = i++
+        if (current >= slides.length) return
+        const result = await processOne(slides[current], current)
+        results[current] = result
+        await runNext()
+    }
+    const workers = Array.from({ length: Math.min(concurrency, slides.length) }, () => runNext())
+    await Promise.all(workers)
+
+    return results
 }

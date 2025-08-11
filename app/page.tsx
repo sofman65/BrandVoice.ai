@@ -1,7 +1,6 @@
 "use client"
 
-import type React from "react"
-import { useState } from "react"
+import React, { useState } from "react"
 import { useMutation } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,6 +15,7 @@ import { ContentResults } from "@/components/content-results"
 import { ThemeToggle } from "@/components/theme-toggle"
 import type { GeneratedContent } from "@/lib/types"
 import Image from "next/image"
+import { MultiStepLoader } from "@/components/ui/multi-step-loader"
 
 interface ProcessResponse {
   success: boolean
@@ -65,37 +65,38 @@ export default function HomePage() {
     },
   })
 
-  const handleUrlChange = (value: string) => {
+  const loadingStates = [
+    { text: "Validating URL" },
+    { text: "Fetching source data" },
+    { text: "Transcribing (if video)" },
+    { text: "Generating copy" },
+    { text: "Creating image prompts" },
+  ]
+
+  const handleUrlChange = async (value: string) => {
     setUrl(value)
 
-    // Determine URL type
     const isInstagram = isValidInstagramUrl(value)
     const isYouTube = isValidYouTubeUrl(value)
 
-    if (value && isInstagram) {
-      setSourceType("instagram")
+    if (value && (isInstagram || isYouTube)) {
+      setSourceType(isInstagram ? "instagram" : "youtube")
       setShowPreview(true)
-      setTimeout(() => {
-        setPreviewData({
-          username: "edhonour",
-          postId: "DJwl7IiNuO1",
-          mediaType: "image",
-          caption: "Improve your development workflow with these amazing tools! 🚀 #coding #productivity",
-          timestamp: new Date().toISOString(),
+      setPreviewData(null)
+      try {
+        const res = await fetch("/api/preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: value }),
         })
-      }, 500)
-    } else if (value && isYouTube) {
-      setSourceType("youtube")
-      setShowPreview(true)
-      setTimeout(() => {
-        setPreviewData({
-          title: "How to Improve Your Development Workflow",
-          channelTitle: "CodeWithMe",
-          thumbnail: `https://i.ytimg.com/vi/${value.split("v=")[1] || "dQw4w9WgXcQ"}/maxresdefault.jpg`,
-          description: "In this video, I share my top tips for improving your development workflow with these amazing tools! 🚀 #coding #productivity",
-          publishedAt: new Date().toISOString(),
-        })
-      }, 500)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const payload = await res.json()
+        if (!payload.success) throw new Error(payload.error || "Failed to fetch preview")
+        setPreviewData(payload.data)
+      } catch (err) {
+        console.error("Preview error", err)
+        setPreviewData(null)
+      }
     } else {
       setSourceType(null)
       setShowPreview(false)
@@ -103,7 +104,7 @@ export default function HomePage() {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     if (!url) {
@@ -129,6 +130,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+      <MultiStepLoader loadingStates={loadingStates} loading={mutation.isPending} duration={1200} />
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
@@ -219,12 +221,12 @@ export default function HomePage() {
                       {mutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                          Launching...
+                          Repurposing...
                         </>
                       ) : (
                         <>
                           <Rocket className="mr-2 h-5 w-5" />
-                          Launch Content
+                          Repurpose
                         </>
                       )}
                     </Button>

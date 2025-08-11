@@ -151,29 +151,32 @@ async function fetchVideoDetails(videoId: string): Promise<YouTubeVideoDetails> 
                     `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
             }
         } else {
-            // Use ytdl-core as a fallback
+            // Use YouTube oEmbed (no API key) as a reliable fallback for title/author/thumbnail
             try {
-                const ytdl = await import('ytdl-core')
-                const info = await ytdl.default.getInfo(videoId)
-                const videoDetails = info.videoDetails
-
-                return {
-                    title: videoDetails.title,
-                    description: videoDetails.description || "",
-                    channelTitle: videoDetails.author.name,
-                    publishedAt: new Date(parseInt(videoDetails.publishDate || "") * 1000).toISOString(),
-                    videoId,
-                    thumbnail: videoDetails.thumbnails[videoDetails.thumbnails.length - 1]?.url ||
-                        `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
+                const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
+                const response = await fetch(oembedUrl, { headers: { Accept: "application/json" } })
+                if (!response.ok) {
+                    throw new Error(`oEmbed HTTP ${response.status}`)
                 }
-            } catch (ytdlError) {
-                console.error("Error using ytdl-core:", ytdlError)
-                throw {
-                    message: "Failed to fetch video details with ytdl-core",
-                    code: 500,
-                    type: "NetworkError",
-                    details: ytdlError
-                } as YouTubeAPIError
+                const data = await response.json()
+                return {
+                    title: data.title || "",
+                    description: "",
+                    channelTitle: data.author_name || "",
+                    publishedAt: undefined,
+                    videoId,
+                    thumbnail: data.thumbnail_url || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+                }
+            } catch (oembedError) {
+                console.error("Error using YouTube oEmbed:", oembedError)
+                return {
+                    title: "",
+                    description: "",
+                    channelTitle: "",
+                    publishedAt: undefined,
+                    videoId,
+                    thumbnail: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+                }
             }
         }
     } catch (error) {
@@ -193,65 +196,40 @@ async function fetchVideoDetails(videoId: string): Promise<YouTubeVideoDetails> 
 }
 
 /**
- * Fetch video transcript using YouTube's transcript API
- * Note: This uses ytdl-core to get video info, but actual transcript extraction would require
- * a dedicated service or library that can extract closed captions.
+ * Fetch video transcript using youtube-transcript package
  */
 async function fetchVideoTranscript(videoId: string): Promise<string> {
     try {
-        // Check if we're in mock mode (no API key)
+        // In mock mode (no API key), still return mock quickly
         if (!process.env.YOUTUBE_API_KEY) {
             return "Hey everyone! Today I'm going to share some amazing tools that will help improve your development workflow. Let's dive in! First, let's talk about VS Code extensions that can boost your productivity. Next, I'll show you some CLI tools that I use every day. Finally, we'll look at some AI-powered tools that can help you write better code faster."
         }
 
-        try {
-            // Import ytdl-core dynamically to avoid server-side issues
-            const ytdl = await import('ytdl-core')
-
-            // Get video info using ytdl-core
-            const info = await ytdl.default.getInfo(videoId)
-
-            // This is a simplified approach - in a real implementation, you would:
-            // 1. Extract the captions track URL from the video info
-            // 2. Fetch the captions (usually in XML format)
-            // 3. Parse and convert them to plain text
-
-            // For now, we'll check if captions exist and return a mock transcript
-            const captionTracks = info.player_response.captions?.playerCaptionsTracklistRenderer?.captionTracks
-            const hasCaptions = captionTracks && captionTracks.length > 0
-
-            if (hasCaptions) {
-                // In a real implementation, you would fetch and process the captions here
-                // For demo purposes, we'll return a mock transcript based on the video title
-                const videoTitle = info.videoDetails.title
-                const channelName = info.videoDetails.author.name
-                return `Transcript for "${videoTitle}" by ${channelName}.\n\nHello everyone, welcome to this video about ${videoTitle.toLowerCase()}. Today we're going to explore some important concepts and ideas that will help you understand this topic better. Let's dive in and learn together!`
-            } else {
-                console.warn("No captions found for video:", videoId)
-                return ""
-            }
-        } catch (ytdlError) {
-            console.error("Error using ytdl-core:", ytdlError)
-            throw {
-                message: "Failed to fetch video transcript",
-                code: 500,
-                type: "TranscriptUnavailable",
-                details: ytdlError
-            } as YouTubeAPIError
+        // Dynamically import to avoid client bundles
+        const mod: any = await import('youtube-transcript').catch(() => null)
+        const YoutubeTranscript = mod?.YoutubeTranscript
+        if (!YoutubeTranscript?.fetchTranscript) {
+            console.warn("youtube-transcript package unavailable, skipping transcript fetch")
+            return ""
         }
+
+        // Try default language auto-detection first
+        const segments: Array<{ text: string }> = await YoutubeTranscript.fetchTranscript(videoId).catch(() => [])
+        if (segments && segments.length > 0) {
+            return segments.map(s => s.text).join(' ').trim()
+        }
+
+        // Try English explicitly as fallback
+        const enSegments: Array<{ text: string }> = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' }).catch(() => [])
+        if (enSegments && enSegments.length > 0) {
+            return enSegments.map(s => s.text).join(' ').trim()
+        }
+
+        // No transcript available
+        console.warn("Transcript not available for video:", videoId)
+        return ""
     } catch (error) {
         console.error("Error fetching transcript:", error)
-
-        const isError = await isYouTubeAPIError(error)
-        if (isError && typeof error === "object" && error !== null && "type" in error) {
-            // If it's a specific API error, we might want to handle it differently
-            if (error.type === "TranscriptUnavailable") {
-                console.warn("Transcript not available for video:", videoId)
-                return "" // Return empty string when transcript is not available
-            }
-            throw error
-        }
-
         throw {
             message: "Failed to fetch video transcript",
             code: 500,

@@ -203,12 +203,21 @@ ${transcript ? `Video highlights: ${transcript.slice(0, 100)}...\n\n` : ""}The f
     // Generate image prompts for the carousel slides
     const slidesWithPrompts = await generateImagePrompts(mockContent.carousel);
 
+    // Env-gated image generation to avoid long blocking requests by default
+    const autoGenerate = process.env.AUTO_IMAGE_GEN === "true";
+    if (!autoGenerate) {
+      return {
+        ...mockContent,
+        carousel: slidesWithPrompts,
+      };
+    }
+
     // Generate images for the slides
     const slidesWithImages = await generateImagesForSlides(slidesWithPrompts);
 
     return {
       ...mockContent,
-      carousel: slidesWithImages
+      carousel: slidesWithImages,
     };
   }
 
@@ -313,6 +322,13 @@ Caption: ${caption}${transcript ? `\n\nVideo Transcript: ${transcript}` : ""}`
     // Generate image prompts for the carousel slides
     console.log("Generating image prompts for carousel slides...");
     const slidesWithPrompts = await generateImagePrompts(parsed.carousel);
+
+    // Env-gated image generation to avoid blocking the main request
+    const autoGenerate = process.env.AUTO_IMAGE_GEN === "true";
+    if (!autoGenerate) {
+      parsed.carousel = slidesWithPrompts;
+      return parsed;
+    }
 
     // Generate images for the slides
     console.log("Generating images for carousel slides...");
