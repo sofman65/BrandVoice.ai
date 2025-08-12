@@ -41,6 +41,7 @@
     "@tabler/icons-react": "3.34.1",
     "@tanstack/react-query": "latest",
     "@types/debug": "latest",
+    "@upstash/redis": "1.35.3",
     "@vitest/browser": "latest",
     "@vitest/ui": "latest",
     "autoprefixer": "^10.4.20",

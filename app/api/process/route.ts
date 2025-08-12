@@ -1,8 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { auth } from "@clerk/nextjs/server"
 import { fetchInstagram } from "@/lib/instagram"
 import { fetchYouTubeData } from "@/lib/youtube"
 import { generateContent, transcribeAudio } from "@/lib/openai"
 import { checkRateLimit } from "@/lib/rate-limit"
+import { userMessageFromError, newRequestId } from "@/lib/errors"
 import { isValidInstagramUrl, isValidYouTubeUrl } from "@/lib/utils"
 import { MetaGraphAPIError } from "@/lib/meta-graph"
 
@@ -11,11 +13,15 @@ export const maxDuration = 60 // Allow up to 60 seconds for video processing
 
 export async function POST(request: NextRequest) {
   try {
+    const { userId } = await auth()
+    if (!userId) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+    }
     // Get client IP for rate limiting
     const ip = request.ip || request.headers.get("x-forwarded-for") || "unknown"
 
     // Check rate limit
-    const { allowed, remaining } = checkRateLimit(ip)
+    const { allowed, remaining } = await checkRateLimit(ip)
     if (!allowed) {
       return NextResponse.json(
         {
@@ -167,23 +173,12 @@ export async function POST(request: NextRequest) {
       generatedContent = await generateContent(sourceData.content, transcript)
       console.log("Content generation completed")
     } catch (generateError) {
-      console.error("Error generating content:", generateError)
+      const requestId = newRequestId()
+      console.error("Error generating content:", { requestId, error: generateError })
 
-      if (generateError instanceof Error) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: generateError.message,
-          },
-          { status: 500 },
-        )
-      }
-
+      const message = userMessageFromError(generateError)
       return NextResponse.json(
-        {
-          success: false,
-          error: "Failed to generate content",
-        },
+        { success: false, error: message, requestId },
         { status: 500 },
       )
     }
@@ -210,12 +205,14 @@ export async function POST(request: NextRequest) {
       },
     )
   } catch (error) {
-    console.error("Unexpected error in API route:", error)
+    const requestId = newRequestId()
+    console.error("Unexpected error in API route:", { requestId, error })
 
     return NextResponse.json(
       {
         success: false,
-        error: "An unexpected error occurred. Please try again.",
+        error: userMessageFromError(error),
+        requestId,
       },
       { status: 500 },
     )

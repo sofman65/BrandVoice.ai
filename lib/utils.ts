@@ -37,12 +37,8 @@ export function cn(...inputs: ClassValue[]) {
 export function getAudioUrlFromVideo(mediaUrl: string): string {
   // For Instagram videos, the media_url contains both video and audio
   // Whisper can extract audio from video files directly
-  if (!mediaUrl) {
-    throw new Error("Invalid media URL provided for audio extraction")
-  }
-  if (!mediaUrl.startsWith("http")) {
-    throw new Error("Media URL must be a valid HTTP or HTTPS URL")
-    return mediaUrl
+  if (!mediaUrl || !/^https?:\/\//.test(mediaUrl)) {
+    throw new Error("Media URL must be a valid HTTP(S) URL")
   }
   return mediaUrl
 }

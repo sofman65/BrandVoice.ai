@@ -56,7 +56,8 @@ export async function transcribeAudio(mediaUrl: string): Promise<string> {
     validateVideoForTranscription(videoBuffer)
 
     // Create temporary file
-    const tempDir = path.join(process.cwd(), "tmp")
+    // Use Vercel's writable temp directory when on serverless
+    const tempDir = process.env.VERCEL ? "/tmp" : path.join(process.cwd(), "tmp")
     await fs.mkdir(tempDir, { recursive: true })
 
     const fileName = `video_${randomUUID()}.mp4`
@@ -292,10 +293,12 @@ Caption: ${caption}${transcript ? `\n\nVideo Transcript: ${transcript}` : ""}`
 
     let parsed: GeneratedContent
     try {
-      parsed = JSON.parse(raw)
+      const { GeneratedContentSchema } = await import("./schemas")
+      // Parse and validate JSON to avoid malformed outputs from LLMs
+      parsed = GeneratedContentSchema.parse(JSON.parse(raw)) as GeneratedContent
     } catch (parseError) {
       console.error("Failed to parse OpenAI response:", raw)
-      throw new Error("AI response was not valid JSON")
+      throw new Error("AI response was not valid JSON or failed validation")
     }
 
     // Validate structure

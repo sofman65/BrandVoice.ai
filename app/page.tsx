@@ -16,6 +16,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import type { GeneratedContent } from "@/lib/types"
 import Image from "next/image"
 import { MultiStepLoader } from "@/components/ui/multi-step-loader"
+import { MainNav } from "@/components/main-nav"
 
 interface ProcessResponse {
   success: boolean
@@ -140,32 +141,8 @@ export default function HomePage() {
 
       <div className="relative z-10 container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-12">
-          <div className="flex items-center gap-6">
-
-            {/* Brand Hierarchy */}
-            <div className="flex flex-col">
-              <div className="flex items-center gap-3">
-                {/* SL Logo */}
-                <div className="relative p-2 ">
-                  <Image
-                    src="/sl-logo.svg"
-                    alt="Spaceslam Logo"
-                    width={140}
-                    height={140}
-                    className="pb-3  dark:invert"
-                  />
-                </div>
-                <div className="h-12 w-px bg-white/30"></div>
-                <div className="flex flex-col">
-                  <span className="text-lg font-semibold text-purple-300">BrandVoice.ai</span>
-                  <span className="text-sm text-gray-400">Content Repurposer</span>
-                </div>
-              </div>
-
-            </div>
-          </div>
-          <ThemeToggle />
+        <div className="mb-12">
+          <MainNav />
         </div>
 
         <div className="max-w-5xl mx-auto space-y-12">
