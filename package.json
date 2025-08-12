@@ -40,6 +40,8 @@
     "@radix-ui/react-tooltip": "latest",
     "@tabler/icons-react": "3.34.1",
     "@tanstack/react-query": "latest",
+    "@tsparticles/react": "3.0.0",
+    "@tsparticles/slim": "3.9.1",
     "@types/debug": "latest",
     "@upstash/redis": "1.35.3",
     "@vitest/browser": "latest",
