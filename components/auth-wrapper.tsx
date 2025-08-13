@@ -1,7 +1,7 @@
 "use client";
-import React from "react";
 import { SparklesCore } from "@/components/ui/sparkles";
 import Image from "next/image";
+import React from "react";
 
 interface AuthWrapperProps {
   children: React.ReactNode;
@@ -9,7 +9,11 @@ interface AuthWrapperProps {
   subtitle?: string;
 }
 
-export function AuthWrapper({ children, title = "BrandVoice.ai", subtitle }: AuthWrapperProps) {
+export function AuthWrapper({
+  children,
+  title = "BrandVoice.ai",
+  subtitle,
+}: AuthWrapperProps) {
   return (
     <div className="min-h-screen w-full bg-black flex flex-col items-center justify-center overflow-hidden relative">
       {/* Background Sparkles */}
@@ -43,15 +47,9 @@ export function AuthWrapper({ children, title = "BrandVoice.ai", subtitle }: Aut
             </div>
           </div>
 
-          <h1 className="text-4xl font-bold text-white mb-2">
-            {title}
-          </h1>
+          <h1 className="text-4xl font-bold text-white mb-2">{title}</h1>
 
-          {subtitle && (
-            <p className="text-gray-300 text-lg">
-              {subtitle}
-            </p>
-          )}
+          {subtitle && <p className="text-gray-300 text-lg">{subtitle}</p>}
         </div>
 
         {/* Auth Component (no outer card to avoid double frames) */}
@@ -60,16 +58,13 @@ export function AuthWrapper({ children, title = "BrandVoice.ai", subtitle }: Aut
         {/* Footer */}
         <div className="text-center mt-8">
           <p className="text-gray-400 text-sm">
-            Powered by <span className="text-purple-400 font-semibold">Sofianos Lampropoulos</span>
+            Powered by{" "}
+            <span className="text-purple-400 font-semibold">
+              Sofianos Lampropoulos
+            </span>
           </p>
         </div>
       </div>
-
-      {/* Additional decorative gradients */}
-      <div className="absolute inset-x-20 top-20 bg-gradient-to-r from-transparent via-purple-500 to-transparent h-[2px] w-3/4 blur-sm" />
-      <div className="absolute inset-x-20 top-20 bg-gradient-to-r from-transparent via-purple-500 to-transparent h-px w-3/4" />
-      <div className="absolute inset-x-60 top-40 bg-gradient-to-r from-transparent via-sky-500 to-transparent h-[5px] w-1/4 blur-sm" />
-      <div className="absolute inset-x-60 top-40 bg-gradient-to-r from-transparent via-sky-500 to-transparent h-px w-1/4" />
     </div>
   );
 }
