@@ -1,7 +1,7 @@
 "use client";
-import React from "react";
-import Image from "next/image";
 import { SparklesCore } from "@/components/ui/sparkles";
+import Image from "next/image";
+import React from "react";
 
 interface AuthWrapperProps {
   children: React.ReactNode;
@@ -12,7 +12,7 @@ interface AuthWrapperProps {
 export function AuthWrapper({
   children,
   title = "BrandVoice.ai",
-  subtitle = "Sign in to your Mission Control",
+  subtitle,
 }: AuthWrapperProps) {
   return (
     <div className="min-h-screen w-full bg-black flex flex-col items-center justify-center overflow-hidden relative">
@@ -45,12 +45,9 @@ export function AuthWrapper({
             />
           </div>
 
-          <h1 className="text-3xl font-semibold text-white tracking-tight">
-            {title}
-          </h1>
-          {subtitle && (
-            <p className="text-gray-400 mt-2">{subtitle}</p>
-          )}
+          <h1 className="text-4xl font-bold text-white mb-2">{title}</h1>
+
+          {subtitle && <p className="text-gray-300 text-lg">{subtitle}</p>}
         </div>
 
         {/* Auth (no extra card to avoid double frame) */}
@@ -58,15 +55,14 @@ export function AuthWrapper({
 
         {/* Footer */}
         <div className="text-center mt-8">
-          <p className="text-gray-500 text-xs">
-            Powered by <span className="text-purple-400 font-medium">Sofianos Lampropoulos</span>
+          <p className="text-gray-400 text-sm">
+            Powered by{" "}
+            <span className="text-purple-400 font-semibold">
+              Sofianos Lampropoulos
+            </span>
           </p>
         </div>
       </div>
-
-      {/* Decorative lines */}
-      <div className="absolute inset-x-20 top-20 bg-gradient-to-r from-transparent via-purple-500 to-transparent h-[2px] w-3/4 blur-sm" />
-      <div className="absolute inset-x-60 top-40 bg-gradient-to-r from-transparent via-sky-500 to-transparent h-[1px] w-1/4" />
     </div>
   );
 }

@@ -1,13 +1,13 @@
-import type React from "react"
-import { ClerkProvider } from "@clerk/nextjs"
-import type { Metadata } from "next"
-import { Inter } from "next/font/google"
-import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
-import { QueryProvider } from "@/components/query-provider"
-import { Toaster } from "@/components/ui/sonner"
+import { QueryProvider } from "@/components/query-provider";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
+import { ClerkProvider } from "@clerk/nextjs";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import type React from "react";
+import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "BrandVoice.ai - Content Repurposer ",
@@ -23,7 +23,9 @@ export const metadata: Metadata = {
     "content marketing",
     "social media tools",
   ],
-  authors: [{ name: "Sofianos Lampropoulos", url: "https://sofianos-lampropoulos.com" }],
+  authors: [
+    { name: "Sofianos Lampropoulos", url: "https://sofianos-lampropoulos.com" },
+  ],
   creator: "Sofianos Lampropoulos",
   publisher: "Sofianos Lampropoulos",
   robots: {
@@ -57,18 +59,21 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "BrandVoice.ai - Instagram Content Repurposer",
-    description: "Transform your Instagram posts into multi-platform content with AI.",
+    description:
+      "Transform your Instagram posts into multi-platform content with AI.",
     images: ["/sl-logo.svg"],
     creator: "@spaceslam",
   },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
-  generator: 'v0.dev'
-}
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
+  ),
+  generator: "v0.dev",
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <ClerkProvider
@@ -79,7 +84,12 @@ export default function RootLayout({
     >
       <html lang="en" suppressHydrationWarning>
         <body className={inter.className}>
-          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem
+            disableTransitionOnChange
+          >
             <QueryProvider>
               {children}
               <Toaster />
@@ -88,5 +98,5 @@ export default function RootLayout({
         </body>
       </html>
     </ClerkProvider>
-  )
+  );
 }
