@@ -16,3 +16,14 @@ export interface GeneratedContent {
   /** Multi-line script (speaker cues + CTA). */
   video_script: string
 }
+
+export interface BrandVoiceProfile {
+  id: string
+  name: string
+  tone: string
+  style: string
+  vocabulary: string
+  audience: string
+  hashtags?: string[]
+  ctaStyle?: string
+}

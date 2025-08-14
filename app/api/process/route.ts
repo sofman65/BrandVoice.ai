@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { auth, currentUser } from "@clerk/nextjs/server"
 import { fetchInstagram } from "@/lib/instagram"
 import { fetchYouTubeData } from "@/lib/youtube"
 import { generateContent, transcribeAudio } from "@/lib/openai"
@@ -76,6 +76,19 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       )
     }
+
+    // Load user's preferred Brand Voice from Clerk public metadata (fallback default)
+    const user = await currentUser()
+    const brandVoice = (user?.publicMetadata?.brandVoice ?? {
+      id: "default",
+      name: "Default",
+      tone: "confident, helpful, friendly",
+      style: "concise, structured, benefits-first",
+      vocabulary: "plain language with light emojis",
+      audience: "creators and developers",
+      hashtags: ["#BrandVoiceAI"],
+      ctaStyle: "invite conversation",
+    }) as any
 
     // Fetch content data based on URL type
     let sourceData: any = {}
@@ -170,7 +183,9 @@ export async function POST(request: NextRequest) {
     let generatedContent
     try {
       console.log("Generating content...")
-      generatedContent = await generateContent(sourceData.content, transcript)
+      // Inject brand voice into caption before generation
+      const preface = `Rewrite in this Brand Voice profile:\n- Tone: ${brandVoice.tone}\n- Style: ${brandVoice.style}\n- Vocabulary: ${brandVoice.vocabulary}\n- Audience: ${brandVoice.audience}\n- CTA Style: ${brandVoice.ctaStyle}\n- Hashtags to consider: ${(brandVoice.hashtags || []).join(", ")}`
+      generatedContent = await generateContent(`${preface}\n\n${sourceData.content}`, transcript)
       console.log("Content generation completed")
     } catch (generateError) {
       const requestId = newRequestId()

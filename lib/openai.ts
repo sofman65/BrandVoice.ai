@@ -2,6 +2,7 @@
 import "server-only"
 
 import type { GeneratedContent } from "./types"
+import type { BrandVoice } from "./schemas"
 import { sleep } from "./utils"
 import { downloadInstagramVideo, validateVideoForTranscription, type MetaGraphAPIError } from "./meta-graph"
 import fs from "fs/promises"
@@ -28,6 +29,36 @@ export async function getOpenAI() {
     console.error("Failed to initialize OpenAI client:", error)
     throw new Error("OpenAI client initialization failed")
   }
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), ms)
+  return new Promise<T>((resolve, reject) => {
+    promise
+      .then((v) => resolve(v))
+      .catch((e) => {
+        if ((e as any)?.name === "AbortError") {
+          reject(new Error(`${label} timed out after ${ms}ms`))
+          return
+        }
+        reject(e)
+      })
+      .finally(() => clearTimeout(timeout))
+  })
+}
+
+function buildVoiceHeader(voice?: BrandVoice): string {
+  if (!voice) return ""
+  const tags = Array.isArray(voice.hashtags) && voice.hashtags.length > 0 ? voice.hashtags.join(", ") : ""
+  return `Use this Brand Voice exactly:
+- Name: ${voice.name}
+- Tone: ${voice.tone}
+- Style: ${voice.style}
+- Vocabulary: ${voice.vocabulary}
+- Audience: ${voice.audience}
+- CTA Style: ${voice.ctaStyle ?? "invite conversation"}
+- Hashtags to consider: ${tags}`
 }
 
 /**
@@ -131,95 +162,62 @@ export async function transcribeAudio(mediaUrl: string): Promise<string> {
  * Generate multi-platform content using GPT-4o-mini
  */
 export async function generateContent(caption: string, transcript?: string): Promise<GeneratedContent> {
+// Overload preserved for backwards compatibility
+  return generateContentWithVoice({ caption, transcript })
+}
+
+export async function generateContentWithVoice({
+  caption,
+  transcript,
+  voice,
+  autoImage = process.env.AUTO_IMAGE_GEN === "true",
+}: {
+  caption: string
+  transcript?: string
+  voice?: BrandVoice
+  autoImage?: boolean
+}): Promise<GeneratedContent> {
   // Mock mode for development without API keys
   if (!process.env.OPENAI_API_KEY) {
     console.log("OpenAI not configured, using mock data")
     await sleep(1000) // Simulate API delay
 
+    const tagLine = voice?.hashtags?.join(" ") || "#BrandVoiceAI"
     const mockContent = {
-      linkedin: `🚀 Exciting breakthrough in space technology! 
+      linkedin: `🚀 ${voice?.name || "BrandVoice"} Take:
 
 ${caption}
 
-${transcript ? `As explained in the video: "${transcript.slice(0, 150)}..."` : ""}
+${transcript ? `Video insight: "${transcript.slice(0, 150)}..."` : ""}
 
-This innovation is set to revolutionize how we approach space exploration and satellite deployment. The implications for global connectivity and scientific research are truly astronomical! 💫
-
-What do you think about this development? Would love to hear your thoughts in the comments!
-
-#SpaceTechnology #Innovation #FutureOfSpace #SatelliteTech #BrandVoice.ai`,
-
+${tagLine}`,
       carousel: [
-        {
-          heading: "🚀 BREAKING: Space-Tech Revolution",
-          body: `${caption.slice(0, 100)}... This changes everything about how we approach space!`
-        },
-        {
-          heading: "The Challenge We've Been Facing",
-          body: "For decades, space technology has been limited by cost, weight, and deployment challenges. These constraints have held back innovation and practical applications."
-        },
-        {
-          heading: "Introducing the Game-Changer",
-          body: `${transcript ? `${transcript.slice(0, 150)}...` : "This new technology"} represents a paradigm shift in how we approach orbital deployments and space missions.`
-        },
-        {
-          heading: "Why This Matters for Everyone",
-          body: "Beyond the scientific community, this breakthrough will impact global communications, climate monitoring, and could accelerate our journey to becoming a multi-planetary species."
-        },
-        {
-          heading: "The Future is Looking Up 🌌",
-          body: "Follow @spaceslam for more cutting-edge space technology updates and insights that are changing our cosmic future!"
-        }
+        { heading: "Key Idea", body: caption.slice(0, 120) + "..." },
+        { heading: "Why It Matters", body: "Clear benefit-focused explanation in the saved voice." },
+        { heading: "How To Use It", body: "Practical next steps the audience can take today." },
+        { heading: "Common Pitfall", body: "One mistake to avoid, phrased in the saved voice." },
+        { heading: "Call To Action", body: voice?.ctaStyle || "Invite conversation and follows." },
       ],
-
-      threads: `🚀 Just discovered something mind-blowing in the space-tech world!
-
-${caption.slice(0, 150)}...
-
-${transcript ? `Video highlights: ${transcript.slice(0, 100)}...\n\n` : ""}The future is literally launching right before our eyes. What do you think about this innovation? 
-
-#SpaceTech #Innovation 🌌`,
-
-      video_script: `[HOOK - 0-3 seconds]
-🎬 VISUAL: Dramatic zoom on excited face with space background
-🗣️ SCRIPT: "You won't believe what just happened in space-tech!"
-
-[PROBLEM/SETUP - 3-8 seconds]  
-🎬 VISUAL: Show the innovation/technology
-🗣️ SCRIPT: "${caption.slice(0, 100)}..."
-
-[SOLUTION/REVEAL - 8-20 seconds]
-🎬 VISUAL: Demonstrate the technology in action with space graphics
-🗣️ SCRIPT: "Here's why this changes EVERYTHING for the future...${transcript ? ` As mentioned in the original: ${transcript.slice(0, 80)}...` : ""}"
-
-[CALL TO ACTION - 20-30 seconds]
-🎬 VISUAL: Direct to camera with Spaceslam logo
-🗣️ SCRIPT: "Follow @spaceslam for more space-tech insights! What's your take on this breakthrough? Drop it in the comments!"
-
-[END SCREEN]
-🎬 VISUAL: Subscribe animation with space theme
-🗣️ SCRIPT: "Don't miss the next space-tech revolution!"`,
-    };
+      threads: `Quick takeaway → ${caption.slice(0, 120)}… ${tagLine}`,
+      video_script: `Intro → Hook in saved voice\nBody → 2–3 benefit points\nCTA → ${voice?.ctaStyle || "Join the conversation"}`,
+    }
 
     // Generate image prompts for the carousel slides
-    const slidesWithPrompts = await generateImagePrompts(mockContent.carousel);
-
-    // Env-gated image generation to avoid long blocking requests by default
-    const autoGenerate = process.env.AUTO_IMAGE_GEN === "true";
-    if (!autoGenerate) {
+    const slidesWithPrompts = await generateImagePrompts(mockContent.carousel)
+    if (!autoImage) {
       return {
         ...mockContent,
         carousel: slidesWithPrompts,
-      };
+      }
     }
 
     // Generate images for the slides
-    const slidesWithImages = await generateImagesForSlides(slidesWithPrompts);
+    const slidesWithImages = await generateImagesForSlides(slidesWithPrompts)
 
     return {
       ...mockContent,
       carousel: slidesWithImages,
-    };
+    }
   }
 
   const openai = await getOpenAI()
@@ -228,55 +226,12 @@ ${transcript ? `Video highlights: ${transcript.slice(0, 100)}...\n\n` : ""}The f
   }
 
   try {
-    const systemPrompt = `You are Spaceslam's energetic, space-tech savvy copywriter with a hint of humor and cosmic flair.
+    const systemPrompt = `${buildVoiceHeader(voice)}\n\nYou are the BrandVoice.ai writer. Rewrite and transform content according to the Brand Voice above. Return JSON only.`
 
-Create cross-platform content that embodies Spaceslam's brand: innovative, energetic, space-themed, and engaging.
+    const userPrompt = `Source Caption:\n${caption}${transcript ? `\n\nTranscript (optional):\n${transcript}` : ""}\n\nGenerate cross-platform content in the saved voice.`
 
-CRITICAL: Return ONLY valid JSON in this EXACT format:
-{
-  "linkedin": "Professional LinkedIn post with hashtags and engagement hooks",
-  "carousel": [
-    {
-      "heading": "Slide 1 Title (attention-grabbing)",
-      "body": "Slide 1 main content that expands on the title"
-    },
-    {
-      "heading": "Slide 2 Title (problem/challenge)",
-      "body": "Slide 2 main content that addresses the problem"
-    },
-    {
-      "heading": "Slide 3 Title (solution/insight)",
-      "body": "Slide 3 main content that presents the solution"
-    },
-    {
-      "heading": "Slide 4 Title (benefits/results)",
-      "body": "Slide 4 main content that showcases benefits"
-    },
-    {
-      "heading": "Slide 5 Title (call to action)",
-      "body": "Slide 5 main content that prompts engagement"
-    }
-  ],
-  "threads": "Conversational Threads post under 500 characters",
-  "video_script": "Complete video script with visual cues and timing"
-}
-
-IMPORTANT RULES:
-- carousel MUST be an array of exactly 5 objects, each with a 'heading' and 'body' (not strings)
-- Each carousel slide should be a complete, engaging story element (not just a title)
-- Use space-tech terminology and emojis (🚀🌌⚡🔥💡)
-- Keep Spaceslam's energetic, innovative tone
-- LinkedIn: Professional but exciting, include hashtags, mention BrandVoice.ai
-- Carousel: Each slide should tell part of a story, be engaging and complete
-- Threads: Conversational, under 500 chars, include hashtags
-- Video Script: Include timing, visual cues, and clear CTAs
-- If transcript is provided, incorporate key insights naturally`
-
-    const userPrompt = `Transform this Instagram content into multi-platform content:
-
-Caption: ${caption}${transcript ? `\n\nVideo Transcript: ${transcript}` : ""}`
-
-    const completion = await openai.chat.completions.create({
+    const completion = await withTimeout(
+      openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "system", content: systemPrompt },
@@ -284,7 +239,11 @@ Caption: ${caption}${transcript ? `\n\nVideo Transcript: ${transcript}` : ""}`
       ],
       temperature: 0.7,
       max_tokens: 2500,
-    })
+      response_format: { type: "json_object" as any },
+    }),
+      30000,
+      "Content generation"
+    )
 
     const raw = completion.choices[0]?.message?.content
     if (!raw) {
@@ -323,22 +282,19 @@ Caption: ${caption}${transcript ? `\n\nVideo Transcript: ${transcript}` : ""}`
     parsed.carousel = parsed.carousel.slice(0, 5)
 
     // Generate image prompts for the carousel slides
-    console.log("Generating image prompts for carousel slides...");
-    const slidesWithPrompts = await generateImagePrompts(parsed.carousel);
-
-    // Env-gated image generation to avoid blocking the main request
-    const autoGenerate = process.env.AUTO_IMAGE_GEN === "true";
-    if (!autoGenerate) {
-      parsed.carousel = slidesWithPrompts;
-      return parsed;
+    console.log("Generating image prompts for carousel slides...")
+    const slidesWithPrompts = await generateImagePrompts(parsed.carousel)
+    if (!autoImage) {
+      parsed.carousel = slidesWithPrompts
+      return parsed
     }
 
     // Generate images for the slides
-    console.log("Generating images for carousel slides...");
-    const slidesWithImages = await generateImagesForSlides(slidesWithPrompts);
+    console.log("Generating images for carousel slides...")
+    const slidesWithImages = await generateImagesForSlides(slidesWithPrompts)
 
     // Update the carousel with image URLs
-    parsed.carousel = slidesWithImages;
+    parsed.carousel = slidesWithImages
 
     return parsed
   } catch (error) {

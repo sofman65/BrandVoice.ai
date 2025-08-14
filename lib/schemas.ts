@@ -1,5 +1,16 @@
 import { z } from "zod"
 
+export const BrandVoiceSchema = z.object({
+  id: z.string().min(1).default("default"),
+  name: z.string().min(1).default("Default"),
+  tone: z.string().min(1).default("professional, friendly, concise"),
+  style: z.string().min(1).default("clear, actionable, value-focused"),
+  vocabulary: z.string().min(1).default("plain language, avoid jargon"),
+  audience: z.string().min(1).default("developers and tech professionals"),
+  hashtags: z.array(z.string()).default(["#BrandVoiceAI"]),
+  ctaStyle: z.string().min(1).default("invite conversation and follows, not salesy"),
+})
+
 export const CarouselSlideSchema = z.union([
   z.string().min(1),
   z.object({
@@ -18,5 +29,6 @@ export const GeneratedContentSchema = z.object({
 })
 
 export type GeneratedContentValidated = z.infer<typeof GeneratedContentSchema>
+export type BrandVoice = z.infer<typeof BrandVoiceSchema>
 
 
