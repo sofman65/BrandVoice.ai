@@ -30,6 +30,25 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export function truncate(text: string | undefined | null, max = 48): string {
+  if (!text) return ""
+  if (text.length <= max) return text
+  return text.slice(0, Math.max(0, max - 1)) + "…"
+}
+
+export function formatDate(iso: string | undefined | null): string {
+  if (!iso) return ""
+  const d = new Date(iso)
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  })
+}
+
+export async function copyToClipboard(text: string): Promise<void> {
+  await navigator.clipboard.writeText(text)
+}
+
 /**
  * Extract audio URL from Instagram video for transcription
  * In practice, this would be the same as media_url for videos

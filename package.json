@@ -6,12 +6,24 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start"
+    "start": "next start",
+    "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
+    "db:migrate": "drizzle-kit migrate --config=drizzle.config.ts",
+    "db:generate:dev": "DB_ENV=dev drizzle-kit generate --config=drizzle.config.ts",
+    "db:migrate:dev": "DB_ENV=dev drizzle-kit migrate --config=drizzle.config.ts",
+    "db:generate:staging": "DB_ENV=staging drizzle-kit generate --config=drizzle.config.ts",
+    "db:migrate:staging": "DB_ENV=staging drizzle-kit migrate --config=drizzle.config.ts",
+    "db:generate:prod": "DB_ENV=prod drizzle-kit generate --config=drizzle.config.ts",
+    "db:migrate:prod": "DB_ENV=prod drizzle-kit migrate --config=drizzle.config.ts",
+    "db:seed": "tsx --env-file=.env.local lib/db/seed.ts",
+    "db:seed:dev": "DB_ENV=dev tsx --env-file=.env.local lib/db/seed.ts",
+    "db:seed:user": "DB_ENV=dev tsx --env-file=.env.local lib/db/seed-user.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.30.1",
     "@edge-runtime/vm": "latest",
     "@hookform/resolvers": "^3.9.1",
+    "@neondatabase/serverless": "1.0.1",
     "@radix-ui/react-accordion": "latest",
     "@radix-ui/react-alert-dialog": "latest",
     "@radix-ui/react-aspect-ratio": "latest",
@@ -53,6 +65,7 @@
     "cmdk": "latest",
     "crypto": "latest",
     "date-fns": "4.1.0",
+    "drizzle-orm": "0.44.4",
     "embla-carousel-react": "latest",
     "fs": "latest",
     "happy-dom": "latest",
@@ -81,14 +94,17 @@
     "ws": "latest",
     "youtube-transcript": "1.2.1",
     "ytdl-core": "^4.11.5",
-    "zod": "^3.24.1"
+    "zod": "^3.24.1",
+    "zustand": "5.0.8"
   },
   "devDependencies": {
     "@types/node": "^22",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
+    "drizzle-kit": "0.31.4",
     "postcss": "^8.5",
     "tailwindcss": "^3.4.17",
+    "tsx": "4.20.5",
     "typescript": "^5"
   }
 }

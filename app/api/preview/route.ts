@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { isValidInstagramUrl, isValidYouTubeUrl } from "@/lib/utils"
-import { fetchInstagram } from "@/lib/instagram"
+// import { fetchInstagram } from "@/lib/instagram"
 import { fetchYouTubeData } from "@/lib/youtube"
 
 export const runtime = "nodejs"

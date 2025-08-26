@@ -1,12 +1,25 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { auth, currentUser } from "@clerk/nextjs/server"
-import { fetchInstagram } from "@/lib/instagram"
+// import { fetchInstagram } from "@/lib/instagram"
 import { fetchYouTubeData } from "@/lib/youtube"
 import { generateContent, transcribeAudio } from "@/lib/openai"
 import { checkRateLimit } from "@/lib/rate-limit"
 import { userMessageFromError, newRequestId } from "@/lib/errors"
 import { isValidInstagramUrl, isValidYouTubeUrl } from "@/lib/utils"
-import { MetaGraphAPIError } from "@/lib/meta-graph"
+// import { MetaGraphAPIError } from "@/lib/meta-graph"
+
+// Temporary stub for Instagram functionality
+async function fetchInstagram(url: string) {
+  throw new Error("Instagram functionality is not yet implemented")
+  // This will never be reached, but satisfies TypeScript
+  return {
+    media_type: "image",
+    caption: "",
+    media_url: "",
+    username: "",
+    timestamp: new Date().toISOString()
+  }
+}
 
 export const runtime = "nodejs"
 export const maxDuration = 60 // Allow up to 60 seconds for video processing
@@ -66,6 +79,8 @@ export async function POST(request: NextRequest) {
     // Determine the URL type and validate
     const isInstagram = isValidInstagramUrl(url)
     const isYouTube = isValidYouTubeUrl(url)
+    
+    console.log("🔍 URL validation:", { url, isInstagram, isYouTube })
 
     if (!isInstagram && !isYouTube) {
       return NextResponse.json(
@@ -183,10 +198,11 @@ export async function POST(request: NextRequest) {
     let generatedContent
     try {
       console.log("Generating content...")
+      console.log("📝 Source data:", { content: sourceData.content, hasTranscript: !!transcript })
       // Inject brand voice into caption before generation
       const preface = `Rewrite in this Brand Voice profile:\n- Tone: ${brandVoice.tone}\n- Style: ${brandVoice.style}\n- Vocabulary: ${brandVoice.vocabulary}\n- Audience: ${brandVoice.audience}\n- CTA Style: ${brandVoice.ctaStyle}\n- Hashtags to consider: ${(brandVoice.hashtags || []).join(", ")}`
       generatedContent = await generateContent(`${preface}\n\n${sourceData.content}`, transcript)
-      console.log("Content generation completed")
+      console.log("✅ Content generation completed:", generatedContent)
     } catch (generateError) {
       const requestId = newRequestId()
       console.error("Error generating content:", { requestId, error: generateError })
