@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn, formatDate, truncate } from "@/lib/utils"
 import { useEffect } from "react"
-import type { MissionListItem } from "@/app/types/Missions"
+import type { MissionListItem } from "@/lib/types"
 import { PlatformIcon } from "@/lib/platform"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { ChevronLeft, ChevronRight, Plus, Search, Pin, Pencil, Trash2, Link } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, Search, Pin, Pencil, Trash2, Link, Bookmark, Sparkles } from "lucide-react"
 import { useRouter, usePathname, useParams } from "next/navigation"
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs"
 import { brandVoiceClerkAppearance } from "@/components/clerk-appearance"
@@ -230,6 +230,79 @@ export function MissionSidebar() {
           <div className="text-sm font-semibold">Mission Log</div>
         )}
       </div>
+
+      {/* Navigation */}
+      {!sidebarCollapsed && (
+        <div className="px-3 py-2">
+          
+          <div className="space-y-1">
+            <button
+              onClick={() => router.push('/')}
+              className={cn(
+                "w-full flex items-center gap-2 px-2 py-2 rounded-lg text-sm transition-colors",
+                pathname === "/" ? "bg-white/10 text-white" : "text-gray-300 hover:bg-white/5 hover:text-white"
+              )}
+            >
+              <Sparkles className="h-4 w-4" />
+              Repurpose
+            </button>
+            <button
+              onClick={() => router.push('/library')}
+              className={cn(
+                "w-full flex items-center gap-2 px-2 py-2 rounded-lg text-sm transition-colors",
+                pathname === "/content-bank" ? "bg-white/10 text-white" : "text-gray-300 hover:bg-white/5 hover:text-white"
+              )}
+            >
+              <Bookmark className="h-4 w-4" />
+              Content Bank
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Collapsed Navigation */}
+      {sidebarCollapsed && (
+        <div className="px-2 py-2">
+          <div className="space-y-1">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => router.push('/')}
+                    className={cn(
+                      "w-full p-2 rounded-lg transition-colors",
+                      pathname === "/" ? "bg-white/10 text-white" : "text-gray-300 hover:bg-white/5 hover:text-white"
+                    )}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>Repurpose</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => router.push('/content-bank')}
+                    className={cn(
+                      "w-full p-2 rounded-lg transition-colors",
+                      pathname === "/content-bank" ? "bg-white/10 text-white" : "text-gray-300 hover:bg-white/5 hover:text-white"
+                    )}
+                  >
+                    <Bookmark className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>Content Bank</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
       {!sidebarCollapsed && (

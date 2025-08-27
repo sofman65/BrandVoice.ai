@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, Sparkles, Rocket, Zap, Globe, Video, Check } from "lucide-react"
+import { Loader2, Sparkles, Rocket, Zap, Globe, Video, Check, Bookmark, X } from "lucide-react"
+import { ContentSelectorModal } from "@/components/content-selector-modal"
 import { toast } from "sonner"
 import { isValidInstagramUrl, isValidYouTubeUrl } from "@/lib/utils"
 import { InstagramPreview } from "@/components/instagram-preview"
@@ -16,6 +17,19 @@ import { ContentResults } from "@/components/content-results"
 import type { GeneratedContent } from "@/lib/types"
 import { MultiStepLoader } from "@/components/ui/multi-step-loader"
 import Link from "next/link"
+
+interface ReferenceContent {
+  id: string
+  title: string
+  description: string
+  link: string
+  platform: "youtube" | "instagram" | "tiktok"
+  savedAt: string
+  thumbnail?: string
+  duration?: string
+  views?: string
+  tags: string[]
+}
 
 interface ProcessResponse {
   success: boolean
@@ -31,18 +45,27 @@ export default function RepurposePage() {
   const [sourceType, setSourceType] = useState<"instagram" | "youtube" | null>(null)
   const [missionData, setMissionData] = useState<GeneratedContent | null>(null)
   const [existingMissionId, setExistingMissionId] = useState<string | null>(null)
+  const [referenceContent, setReferenceContent] = useState<ReferenceContent | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
 
 
   const mutation = useMutation({
     mutationFn: async (contentUrl: string): Promise<GeneratedContent> => {
       console.log("🚀 Starting content generation for:", contentUrl)
+      console.log("📚 Reference content:", referenceContent)
+      
+      const requestBody: any = { url: contentUrl }
+      if (referenceContent) {
+        requestBody.referenceContent = referenceContent
+      }
+      
       const response = await fetch("/api/process", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ url: contentUrl }),
+        body: JSON.stringify(requestBody),
       })
 
       if (!response.ok) {
@@ -119,6 +142,21 @@ export default function RepurposePage() {
     },
   })
 
+  // Load reference content from localStorage on mount
+  useEffect(() => {
+    const savedReference = localStorage.getItem('referenceContent')
+    if (savedReference) {
+      try {
+        const parsed = JSON.parse(savedReference)
+        setReferenceContent(parsed)
+        toast.success("Reference content loaded from library!")
+      } catch (err) {
+        console.error("Error parsing reference content:", err)
+        localStorage.removeItem('referenceContent')
+      }
+    }
+  }, [])
+
   // Reset state when reset parameter is present
   useEffect(() => {
     if (searchParams.get("reset") === "true") {
@@ -126,6 +164,8 @@ export default function RepurposePage() {
       setShowPreview(false)
       setPreviewData(null)
       setSourceType(null)
+      setReferenceContent(null)
+      localStorage.removeItem('referenceContent')
       mutation.reset()
       // Clear the URL parameter
       window.history.replaceState({}, "", "/")
@@ -281,7 +321,33 @@ export default function RepurposePage() {
     setSourceType(null)
     setShowPreview(false)
     setPreviewData(null)
+    setReferenceContent(null)
+    localStorage.removeItem('referenceContent')
     mutation.reset()
+  }
+
+  const clearReference = () => {
+    setReferenceContent(null)
+    localStorage.removeItem('referenceContent')
+    toast.success("Reference content cleared")
+  }
+
+  const handleSelectReference = (content: ReferenceContent) => {
+    setReferenceContent(content)
+    localStorage.setItem('referenceContent', JSON.stringify(content))
+  }
+
+  const getPlatformIcon = (platform: string) => {
+    switch (platform) {
+      case "youtube":
+        return <Video className="h-4 w-4 text-red-500" />
+      case "instagram":
+        return <Video className="h-4 w-4 text-pink-500" />
+      case "tiktok":
+        return <Video className="h-4 w-4 text-black" />
+      default:
+        return <Video className="h-4 w-4" />
+    }
   }
 
   return (
@@ -318,11 +384,77 @@ export default function RepurposePage() {
             </p>
           </div>
 
+          {/* Reference Content Section */}
+          <Card className="bg-white/10 backdrop-blur-xl border-white/20 shadow-2xl mb-6">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-purple-300" />
+                  <CardTitle className="text-lg font-bold text-white">Reference Content (Optional)</CardTitle>
+                </div>
+                {referenceContent && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearReference}
+                    className="text-gray-400 hover:text-white"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              <CardDescription className="text-gray-300">
+                Choose content from your library to use as inspiration for your new repurpose
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0">
+              {referenceContent ? (
+                <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg p-4 border border-purple-500/30">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0">
+                      {getPlatformIcon(referenceContent.platform)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-white mb-1 line-clamp-1">
+                        {referenceContent.title}
+                      </h4>
+                      <p className="text-sm text-gray-300 line-clamp-2 mb-2">
+                        {referenceContent.description}
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {referenceContent.tags.slice(0, 3).map((tag, index) => (
+                          <span key={index} className="px-2 py-1 bg-purple-500/20 text-purple-200 text-xs rounded-full">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 mb-4">No reference content selected</div>
+                  <Button
+                    onClick={() => setIsModalOpen(true)}
+                    variant="outline"
+                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  >
+                    <Bookmark className="h-4 w-4 mr-2" />
+                    Browse Content Library
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card className="bg-white/10 backdrop-blur-xl border-white/20 shadow-2xl">
             <CardHeader className="text-center pb-8">
               <CardTitle className="text-2xl font-bold text-white mb-2">Mission Control Center</CardTitle>
               <CardDescription className="text-gray-300 text-lg">
-                Enter Instagram or YouTube URL to begin content transformation
+                {referenceContent 
+                  ? `Enter Instagram or YouTube URL to repurpose with "${referenceContent.title}" as inspiration`
+                  : "Enter Instagram or YouTube URL to begin content transformation"
+                }
               </CardDescription>
             </CardHeader>
 
@@ -451,6 +583,13 @@ export default function RepurposePage() {
           </div>
         </div>
       </div>
+
+      {/* Content Selector Modal */}
+      <ContentSelectorModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSelect={handleSelectReference}
+      />
     </div>
   )
 }

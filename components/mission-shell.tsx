@@ -1,11 +1,15 @@
 "use client"
 import * as React from "react"
 import { cn } from "@/lib/utils"
-import { useMissionStore } from "@/lib/store"
 import { ErrorBoundary } from "@/components/error-boundary"
 
 export function MissionShell({ sidebar, detail }: { sidebar: React.ReactNode; detail: React.ReactNode }) {
-  const { sidebarCollapsed } = useMissionStore()
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('sidebarCollapsed') === 'true'
+    }
+    return false
+  })
   return (
     <div className={cn("min-h-screen w-full bg-gradient-to-b from-[#1d0b2e] via-[#2a0f46] to-[#0c0616]")}> 
       <div

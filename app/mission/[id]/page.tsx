@@ -8,17 +8,7 @@ import { Loader2, ArrowLeft, Copy, Check, Zap, Globe, Video, Sparkles } from "lu
 import { toast } from "sonner"
 import Link from "next/link"
 import { ContentResults } from "@/components/content-results"
-import type { GeneratedContent } from "@/lib/types"
-
-interface Mission {
-  id: string
-  title: string
-  platform: "instagram" | "youtube"
-  sourceUrl: string
-  pinned: boolean
-  createdAt: string
-  outputs: GeneratedContent
-}
+import type { Mission } from "@/lib/types"
 
 export default function MissionDetailPage() {
   const params = useParams()

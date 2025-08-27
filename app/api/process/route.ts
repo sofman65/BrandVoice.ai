@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { url } = body
+    const { url, referenceContent } = body
 
     if (!url || typeof url !== "string") {
       return NextResponse.json(
@@ -199,8 +199,16 @@ export async function POST(request: NextRequest) {
     try {
       console.log("Generating content...")
       console.log("📝 Source data:", { content: sourceData.content, hasTranscript: !!transcript })
+      console.log("📚 Reference content:", referenceContent ? "Available" : "None")
+      
       // Inject brand voice into caption before generation
-      const preface = `Rewrite in this Brand Voice profile:\n- Tone: ${brandVoice.tone}\n- Style: ${brandVoice.style}\n- Vocabulary: ${brandVoice.vocabulary}\n- Audience: ${brandVoice.audience}\n- CTA Style: ${brandVoice.ctaStyle}\n- Hashtags to consider: ${(brandVoice.hashtags || []).join(", ")}`
+      let preface = `Rewrite in this Brand Voice profile:\n- Tone: ${brandVoice.tone}\n- Style: ${brandVoice.style}\n- Vocabulary: ${brandVoice.vocabulary}\n- Audience: ${brandVoice.audience}\n- CTA Style: ${brandVoice.ctaStyle}\n- Hashtags to consider: ${(brandVoice.hashtags || []).join(", ")}`
+      
+      // Add reference content context if available
+      if (referenceContent) {
+        preface += `\n\nUse this reference content as inspiration for style, tone, and approach:\nTitle: ${referenceContent.title}\nDescription: ${referenceContent.description}\nTags: ${referenceContent.tags.join(", ")}\nPlatform: ${referenceContent.platform}`
+      }
+      
       generatedContent = await generateContent(`${preface}\n\n${sourceData.content}`, transcript)
       console.log("✅ Content generation completed:", generatedContent)
     } catch (generateError) {
@@ -227,6 +235,9 @@ export async function POST(request: NextRequest) {
           transcript_length: transcript?.length || 0,
           timestamp: sourceData.timestamp,
           video_id: sourceData.video_id || null,
+          has_reference_content: !!referenceContent,
+          reference_content_title: referenceContent?.title || null,
+          reference_content_platform: referenceContent?.platform || null,
         },
       },
       {

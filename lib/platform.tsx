@@ -2,9 +2,9 @@
 import * as React from "react"
 import { Video, Instagram as InstagramIcon } from "lucide-react"
 
-import type { Platform } from "@/lib/store"
+import type { MissionPlatform } from "@/lib/types"
 
-export function PlatformIcon({ platform, className }: { platform: Platform; className?: string }) {
+export function PlatformIcon({ platform, className }: { platform: MissionPlatform; className?: string }) {
   if (platform === "youtube") {
     return <Video className={className} aria-hidden />
   }

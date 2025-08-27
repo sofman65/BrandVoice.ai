@@ -21,19 +21,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (isInsta) {
-      const data = await fetchInstagram(url)
+      // Instagram fetching not yet implemented
       return NextResponse.json({
-        success: true,
-        type: "instagram",
-        data: {
-          username: data.username,
-          postId: undefined,
-          mediaType: data.media_type,
-          caption: data.caption,
-          timestamp: data.timestamp,
-          thumbnail: data.thumbnail_url,
-        },
-      })
+        success: false,
+        error: "Instagram preview not yet implemented"
+      }, { status: 501 })
     }
 
     const yt = await fetchYouTubeData(url)

@@ -2,7 +2,7 @@
 import "server-only"
 
 import type { GeneratedContent } from "./types"
-import type { BrandVoice } from "./schemas"
+import type { BrandVoice } from "./types"
 import { sleep } from "./utils"
 // import { downloadInstagramVideo, validateVideoForTranscription, type MetaGraphAPIError } from "./meta-graph"
 import fs from "fs/promises"
@@ -95,15 +95,18 @@ export async function transcribeAudio(mediaUrl: string): Promise<string> {
     tempFilePath = path.join(tempDir, fileName)
 
     // Write video buffer to temporary file
-    await fs.writeFile(tempFilePath, videoBuffer)
+    // await fs.writeFile(tempFilePath, videoBuffer)
+    throw new Error("Video transcription not yet implemented")
 
+    // The following code is commented out since video transcription is not yet implemented
+    /*
     console.log("Transcribing video with Whisper-1...")
 
     // Create file stream for OpenAI
     const fileStream = await fs.open(tempFilePath, "r")
 
     // Transcribe using Whisper-1
-    const transcription = await openai.audio.transcriptions.create({
+    const transcription = await openai?.audio.transcriptions.create({
       file: fileStream.createReadStream(),
       model: "whisper-1",
       language: "en", // Specify language for better accuracy
@@ -119,6 +122,7 @@ export async function transcribeAudio(mediaUrl: string): Promise<string> {
 
     console.log("Transcription completed successfully")
     return transcription.trim()
+    */
   } catch (error) {
     console.error("Transcription error:", error)
 
@@ -285,7 +289,7 @@ Generate cross-platform content in the saved voice. Make sure to return exactly 
 
     while (retryCount <= maxRetries && !parsed) {
       try {
-        const { GeneratedContentSchema } = await import("./schemas")
+        const { GeneratedContentSchema } = await import("./types")
         // Parse and validate JSON to avoid malformed outputs from LLMs
         parsed = GeneratedContentSchema.parse(JSON.parse(raw)) as GeneratedContent
         break // Success, exit retry loop
