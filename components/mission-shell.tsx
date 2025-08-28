@@ -1,28 +1,58 @@
-"use client"
-import * as React from "react"
-import { cn } from "@/lib/utils"
-import { ErrorBoundary } from "@/components/error-boundary"
+"use client";
 
-export function MissionShell({ sidebar, detail }: { sidebar: React.ReactNode; detail: React.ReactNode }) {
-  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('sidebarCollapsed') === 'true'
-    }
-    return false
-  })
+import * as React from "react";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { AppTopbar } from "@/components/app-topbar";
+
+type Props = {
+  sidebar: React.ReactNode;
+  detail: React.ReactNode;
+};
+
+export function MissionShell({ sidebar, detail }: Props) {
+  const [collapsed, setCollapsed] = React.useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("sidebarCollapsed") === "true";
+  });
+
+  // keep sidebar width in a CSS var so grid is stable
+  React.useEffect(() => {
+    document.documentElement.style.setProperty("--sb-w", collapsed ? "5rem" : "18rem");
+  }, [collapsed]);
+
+  // listen for sidebar toggle (no polling, no storage listeners)
+  React.useEffect(() => {
+    const onToggle = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { collapsed: boolean };
+      if (typeof detail?.collapsed === "boolean") setCollapsed(detail.collapsed);
+    };
+    window.addEventListener("sidebarToggled", onToggle as EventListener);
+    return () => window.removeEventListener("sidebarToggled", onToggle as EventListener);
+  }, []);
+
   return (
-    <div className={cn("min-h-screen w-full bg-gradient-to-b from-[#1d0b2e] via-[#2a0f46] to-[#0c0616]")}> 
-      <div
-        className={cn(
-          "grid transition-[grid-template-columns]",
-          sidebarCollapsed ? "grid-cols-[80px_1fr]" : "grid-cols-[280px_1fr]"
-        )}
-      >
-        {sidebar}
-        <main className="min-h-screen overflow-hidden"><ErrorBoundary>{detail}</ErrorBoundary></main>
+    <div className="min-h-screen w-full">
+      {/* Desktop: sidebar + canvas. Mobile: only canvas; sidebar appears via AppTopbar sheet. */}
+      <div className="grid min-h-screen md:grid-cols-[var(--sb-w,_18rem)_1fr]">
+        <aside className="hidden md:block w-[var(--sb-w,_18rem)]">{sidebar}</aside>
+
+        <main
+          aria-label="Main content"
+          className="min-w-0 overflow-x-hidden scrollbar-gutter-stable"
+        >
+          {/* Mobile topbar (hamburger opens the same sidebar in a Sheet) */}
+          <div className="md:hidden">
+            <AppTopbar sidebar={sidebar} />
+          </div>
+
+          <ErrorBoundary>
+            {/* Stable centered canvas; pages render their own backgrounds */}
+            <div className="mx-auto w-full max-w-[1100px] px-4 md:px-6 py-6">
+              {detail}
+            </div>
+          </ErrorBoundary>
+        </main>
       </div>
     </div>
-  )
+  );
 }
-
-

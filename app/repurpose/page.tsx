@@ -3,20 +3,22 @@
 import React, { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { useMutation } from "@tanstack/react-query"
+import Link from "next/link"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, Sparkles, Rocket, Zap, Globe, Video, Check, Bookmark, X } from "lucide-react"
+import {
+  Loader2, Sparkles, Rocket, Zap, Globe, Video, Check, Bookmark, X,
+} from "lucide-react"
 import { ContentSelectorModal } from "@/components/content-selector-modal"
-import { toast } from "sonner"
 import { isValidInstagramUrl, isValidYouTubeUrl } from "@/lib/utils"
 import { InstagramPreview } from "@/components/instagram-preview"
 import { YouTubePreview } from "@/components/youtube-preview"
 import { ContentResults } from "@/components/content-results"
 import type { GeneratedContent } from "@/lib/types"
 import { MultiStepLoader } from "@/components/ui/multi-step-loader"
-import Link from "next/link"
 
 interface ReferenceContent {
   id: string
@@ -39,6 +41,7 @@ interface ProcessResponse {
 
 export default function RepurposePage() {
   const searchParams = useSearchParams()
+
   const [url, setUrl] = useState("")
   const [showPreview, setShowPreview] = useState(false)
   const [previewData, setPreviewData] = useState<any>(null)
@@ -48,111 +51,69 @@ export default function RepurposePage() {
   const [referenceContent, setReferenceContent] = useState<ReferenceContent | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-
-
   const mutation = useMutation({
     mutationFn: async (contentUrl: string): Promise<GeneratedContent> => {
-      console.log("🚀 Starting content generation for:", contentUrl)
-      console.log("📚 Reference content:", referenceContent)
-      
       const requestBody: any = { url: contentUrl }
-      if (referenceContent) {
-        requestBody.referenceContent = referenceContent
-      }
-      
+      if (referenceContent) requestBody.referenceContent = referenceContent
+
       const response = await fetch("/api/process", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),
       })
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
-      }
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
 
       let data: ProcessResponse
       try {
         data = await response.json()
-      } catch (parseError) {
+      } catch {
         throw new Error("Server returned an invalid response. Please try again.")
       }
-
       if (!data.success || !data.data) {
         throw new Error(data.error || "Failed to process content")
       }
-
       return data.data
     },
     onError: (error: Error) => {
-      console.error("Mutation error:", error.message)
       toast.error(error.message || "Something went wrong. Please try again.")
     },
     onSuccess: async (data) => {
-      console.log("🎉 Mission completed successfully!", data)
-      console.log("📊 Generated data structure:", JSON.stringify(data, null, 2))
-      
-      // Update the mission with the generated outputs
       try {
-        const currentMissionId = localStorage.getItem('currentMissionId')
-        console.log("🔍 Current mission ID from localStorage:", currentMissionId)
-        
+        const currentMissionId = localStorage.getItem("currentMissionId")
         if (currentMissionId) {
-          console.log("📤 Sending update request with outputs:", JSON.stringify(data, null, 2))
-          
           const updateRes = await fetch(`/api/missions/${currentMissionId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ outputs: data })
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ outputs: data }),
           })
-          
-          console.log("📡 Update response status:", updateRes.status)
-          
           if (updateRes.ok) {
-            const updatedMission = await updateRes.json()
-            console.log("✅ Mission updated with outputs:", updatedMission.data)
-            
-            // Dispatch a custom event to notify the sidebar to refresh
-            if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('missionUpdated', { 
-                detail: { missionId: currentMissionId, outputs: data }
-              }))
-              console.log("📡 Dispatched missionUpdated event")
-            }
-          } else {
-            const errorData = await updateRes.json()
-            console.error("❌ Failed to update mission with outputs:", errorData)
+            // Notify sidebar to refresh
+            window.dispatchEvent(
+              new CustomEvent("missionUpdated", {
+                detail: { missionId: currentMissionId, outputs: data },
+              })
+            )
           }
-        } else {
-          console.warn("⚠️ No current mission ID found in localStorage")
         }
       } catch (err) {
         console.error("Error updating mission with outputs:", err)
       }
-      
+
       toast.success("Content generated successfully!")
-      // Clear the current mission ID from localStorage so user can create new missions
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('currentMissionId')
-        // Dispatch a custom event to notify the sidebar
-        window.dispatchEvent(new CustomEvent('missionCompleted'))
-        console.log("📡 Dispatched missionCompleted event")
-      }
+      localStorage.removeItem("currentMissionId")
+      window.dispatchEvent(new CustomEvent("missionCompleted"))
     },
   })
 
   // Load reference content from localStorage on mount
   useEffect(() => {
-    const savedReference = localStorage.getItem('referenceContent')
-    if (savedReference) {
+    const saved = localStorage.getItem("referenceContent")
+    if (saved) {
       try {
-        const parsed = JSON.parse(savedReference)
-        setReferenceContent(parsed)
+        setReferenceContent(JSON.parse(saved))
         toast.success("Reference content loaded from library!")
-      } catch (err) {
-        console.error("Error parsing reference content:", err)
-        localStorage.removeItem('referenceContent')
+      } catch {
+        localStorage.removeItem("referenceContent")
       }
     }
   }, [])
@@ -165,9 +126,8 @@ export default function RepurposePage() {
       setPreviewData(null)
       setSourceType(null)
       setReferenceContent(null)
-      localStorage.removeItem('referenceContent')
+      localStorage.removeItem("referenceContent")
       mutation.reset()
-      // Clear the URL parameter
       window.history.replaceState({}, "", "/")
     }
   }, [searchParams, mutation])
@@ -175,11 +135,8 @@ export default function RepurposePage() {
   // Trigger mission completed event when data is available
   useEffect(() => {
     if (mutation.data) {
-      console.log("📊 Mutation data available, triggering mission completed")
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('currentMissionId')
-        window.dispatchEvent(new CustomEvent('missionCompleted'))
-      }
+      localStorage.removeItem("currentMissionId")
+      window.dispatchEvent(new CustomEvent("missionCompleted"))
     }
   }, [mutation.data])
 
@@ -211,14 +168,13 @@ export default function RepurposePage() {
         const payload = await res.json()
         if (!payload.success) throw new Error(payload.error || "Failed to fetch preview")
         setPreviewData(payload.data)
-        
-        // Check if this URL has already been processed
+
+        // Check if this URL has existing mission
         const missionsRes = await fetch("/api/missions", { credentials: "include" })
         if (missionsRes.ok) {
           const missionsData = await missionsRes.json()
           const existingMission = missionsData.data?.find((m: any) => m.sourceUrl === value)
           if (existingMission && existingMission.outputs && Object.keys(existingMission.outputs).length > 0) {
-            // Mission already exists with outputs - show the results
             setMissionData(existingMission.outputs)
             setExistingMissionId(existingMission.id)
           } else {
@@ -242,77 +198,55 @@ export default function RepurposePage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    if (!url) {
-      toast.error("Please enter a URL")
-      return
-    }
-
+    if (!url) return toast.error("Please enter a URL")
     if (!isValidInstagramUrl(url) && !isValidYouTubeUrl(url)) {
-      toast.error("Please enter a valid Instagram or YouTube URL")
-      return
+      return toast.error("Please enter a valid Instagram or YouTube URL")
     }
-
-    // If we already have mission data, just show it (don't create new mission)
     if (missionData) {
       toast.info("This URL has already been processed. Showing existing results.")
       return
     }
 
-    // Fetch YouTube data first to get title and description
+    // Prepare mission title/description from preview (YouTube)
     let missionTitle = `Mission: ${url.substring(0, 50)}...`
     let missionDescription = ""
-    
     if (isValidYouTubeUrl(url)) {
       try {
         const previewRes = await fetch("/api/preview", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: url }),
+          body: JSON.stringify({ url }),
         })
-        
         if (previewRes.ok) {
-          const previewData = await previewRes.json()
-          if (previewData.success && previewData.data?.title) {
-            // Use the YouTube title as the mission title
-            missionTitle = previewData.data.title
-          }
-          if (previewData.success && previewData.data?.description) {
-            // Use the YouTube description as the mission description
-            missionDescription = previewData.data.description.substring(0, 200) + "..."
+          const pd = await previewRes.json()
+          if (pd.success && pd.data?.title) missionTitle = pd.data.title
+          if (pd.success && pd.data?.description) {
+            missionDescription = pd.data.description.substring(0, 200) + "..."
           }
         }
-      } catch (err) {
-        console.error("Error fetching preview for mission title:", err)
-      }
+      } catch {}
     }
 
-    // Create a new mission with the fetched title
+    // Create mission
     try {
       const res = await fetch("/api/missions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           title: missionTitle,
           platform: isValidInstagramUrl(url) ? "instagram" : "youtube",
           sourceUrl: url,
-          description: missionDescription
+          description: missionDescription,
         }),
       })
-      
       if (res.ok) {
         const result = await res.json()
-        // Store the mission ID for later use
-        if (result.data?.id) {
-          localStorage.setItem('currentMissionId', result.data.id)
-          console.log("🎯 Created mission with ID:", result.data.id)
-        }
+        if (result.data?.id) localStorage.setItem("currentMissionId", result.data.id)
       }
-    }
-    catch (err) {
+    } catch (err) {
       console.error("Error creating mission", err)
     }
 
-    // Then start the content generation
     mutation.mutate(url)
   }
 
@@ -322,19 +256,19 @@ export default function RepurposePage() {
     setShowPreview(false)
     setPreviewData(null)
     setReferenceContent(null)
-    localStorage.removeItem('referenceContent')
+    localStorage.removeItem("referenceContent")
     mutation.reset()
   }
 
   const clearReference = () => {
     setReferenceContent(null)
-    localStorage.removeItem('referenceContent')
+    localStorage.removeItem("referenceContent")
     toast.success("Reference content cleared")
   }
 
   const handleSelectReference = (content: ReferenceContent) => {
     setReferenceContent(content)
-    localStorage.setItem('referenceContent', JSON.stringify(content))
+    localStorage.setItem("referenceContent", JSON.stringify(content))
   }
 
   const getPlatformIcon = (platform: string) => {
@@ -351,41 +285,43 @@ export default function RepurposePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+    <div className="relative overflow-hidden">
       <MultiStepLoader loadingStates={loadingStates} loading={mutation.isPending} duration={1200} />
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse delay-500"></div>
-      </div>
 
-      <div className="relative z-10 container mx-auto px-4 py-8">
-        <div className="mb-6">
+
+      {/* canvas */}
+      <div className="relative z-10 py-8 px-4 md:px-6">
+        {/* header row */}
+        <div className="mb-6 mr-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="text-purple-300 hover:text-purple-200 text-sm">Back to Mission Log</Link>
+            <Link href="/" className="text-sm text-purple-300 hover:text-purple-200">
+              Back to Mission Log
+            </Link>
           </div>
         </div>
 
-        <div className="max-w-5xl mx-auto space-y-12">
-          <div className="text-center space-y-6">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/20 border border-purple-500/30 rounded-full text-purple-300 text-sm font-medium">
+        {/* STABLE CENTERED WIDTH (independent of sidebar) */}
+        <div className="mx-auto w-full max-w-[1100px] space-y-12 transition-all duration-300">
+          {/* hero */}
+          <div className="space-y-6 text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-purple-500/30 bg-purple-500/20 px-4 py-2 text-sm font-medium text-purple-300">
               <Sparkles className="h-4 w-4" />
               Powered by Spaceslam Technology
             </div>
-            <h2 className="text-5xl md:text-6xl font-bold text-white leading-tight">
+            <h2 className="text-5xl font-bold leading-tight text-white md:text-6xl">
               Transform Your
               <span className="block bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
                 Social Content
               </span>
             </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              Launch your content into the stratosphere with BrandVoice.ai. Convert any Instagram post or YouTube video into
-              multi-platform content that reaches every corner of the digital universe.
+            <p className="mx-auto max-w-3xl text-xl leading-relaxed text-gray-300">
+              Launch your content into the stratosphere with BrandVoice.ai. Convert any Instagram post
+              or YouTube video into multi-platform content that reaches every corner of the digital universe.
             </p>
           </div>
 
-          {/* Reference Content Section */}
-          <Card className="bg-white/10 backdrop-blur-xl border-white/20 shadow-2xl mb-6">
+          {/* reference content */}
+          <Card className="mb-6 border-white/20 bg-white/10 shadow-2xl backdrop-blur-xl">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -393,12 +329,7 @@ export default function RepurposePage() {
                   <CardTitle className="text-lg font-bold text-white">Reference Content (Optional)</CardTitle>
                 </div>
                 {referenceContent && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearReference}
-                    className="text-gray-400 hover:text-white"
-                  >
+                  <Button variant="ghost" size="sm" onClick={clearReference} className="text-gray-400 hover:text-white">
                     <X className="h-4 w-4" />
                   </Button>
                 )}
@@ -409,21 +340,15 @@ export default function RepurposePage() {
             </CardHeader>
             <CardContent className="pt-0">
               {referenceContent ? (
-                <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg p-4 border border-purple-500/30">
+                <div className="rounded-lg border border-purple-500/30 bg-gradient-to-r from-purple-500/20 to-pink-500/20 p-4">
                   <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0">
-                      {getPlatformIcon(referenceContent.platform)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-white mb-1 line-clamp-1">
-                        {referenceContent.title}
-                      </h4>
-                      <p className="text-sm text-gray-300 line-clamp-2 mb-2">
-                        {referenceContent.description}
-                      </p>
+                    <div className="flex-shrink-0">{getPlatformIcon(referenceContent.platform)}</div>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="mb-1 line-clamp-1 font-semibold text-white">{referenceContent.title}</h4>
+                      <p className="mb-2 line-clamp-2 text-sm text-gray-300">{referenceContent.description}</p>
                       <div className="flex flex-wrap gap-1">
-                        {referenceContent.tags.slice(0, 3).map((tag, index) => (
-                          <span key={index} className="px-2 py-1 bg-purple-500/20 text-purple-200 text-xs rounded-full">
+                        {referenceContent.tags.slice(0, 3).map((tag, idx) => (
+                          <span key={idx} className="rounded-full bg-purple-500/20 px-2 py-1 text-xs text-purple-200">
                             {tag}
                           </span>
                         ))}
@@ -432,14 +357,14 @@ export default function RepurposePage() {
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <div className="text-gray-400 mb-4">No reference content selected</div>
+                <div className="py-8 text-center">
+                  <div className="mb-4 text-gray-400">No reference content selected</div>
                   <Button
                     onClick={() => setIsModalOpen(true)}
                     variant="outline"
-                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    className="border-white/20 bg-white/10 text-white hover:bg-white/20"
                   >
-                    <Bookmark className="h-4 w-4 mr-2" />
+                    <Bookmark className="mr-2 h-4 w-4" />
                     Browse Content Library
                   </Button>
                 </div>
@@ -447,21 +372,23 @@ export default function RepurposePage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/10 backdrop-blur-xl border-white/20 shadow-2xl">
-            <CardHeader className="text-center pb-8">
-              <CardTitle className="text-2xl font-bold text-white mb-2">Mission Control Center</CardTitle>
-              <CardDescription className="text-gray-300 text-lg">
-                {referenceContent 
+          {/* mission control */}
+          <Card className="border-white/20 bg-white/10 shadow-2xl backdrop-blur-xl">
+            <CardHeader className="pb-8 text-center">
+              <CardTitle className="mb-2 text-2xl font-bold text-white">Mission Control Center</CardTitle>
+              <CardDescription className="text-lg text-gray-300">
+                {referenceContent
                   ? `Enter Instagram or YouTube URL to repurpose with "${referenceContent.title}" as inspiration`
-                  : "Enter Instagram or YouTube URL to begin content transformation"
-                }
+                  : "Enter Instagram or YouTube URL to begin content transformation"}
               </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-8">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-3">
-                  <Label htmlFor="mission-url" className="text-white font-medium text-lg">URL</Label>
+                  <Label htmlFor="mission-url" className="text-lg font-medium text-white">
+                    URL
+                  </Label>
                   <div className="flex gap-4">
                     <Input
                       id="mission-url"
@@ -469,13 +396,13 @@ export default function RepurposePage() {
                       placeholder="https://www.instagram.com/p/... or https://www.youtube.com/watch?v=..."
                       value={url}
                       onChange={(e) => handleUrlChange(e.target.value)}
-                      className="flex-1 h-14 text-lg bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-400 focus:ring-purple-400/20"
+                      className="h-14 flex-1 border-white/20 bg-white/10 text-lg text-white placeholder:text-gray-400 focus:border-purple-400 focus:ring-purple-400/20"
                       disabled={mutation.isPending}
                     />
                     <Button
                       type="submit"
                       disabled={mutation.isPending || !previewData || !!missionData}
-                      className="h-14 px-8 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold text-lg shadow-lg hover:shadow-purple-500/25 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="h-14 px-8 font-semibold text-lg text-white shadow-lg transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50 bg-gradient-to-r from-purple-600 to-pink-700 hover:shadow-purple-500/25"
                     >
                       {mutation.isPending ? (
                         <>
@@ -499,12 +426,12 @@ export default function RepurposePage() {
               </form>
 
               {showPreview && (
-                <div className="bg-white/10 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
+                <div className="rounded-lg bg-white/10 p-4">
+                  <div className="mb-3 flex items-center justify-between">
                     <h4 className="text-xl font-bold text-white">
                       {sourceType === "instagram" ? "Instagram Preview" : "YouTube Preview"}
                     </h4>
-                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300">
+                    <span className="rounded-full bg-purple-500/20 px-3 py-1 text-xs font-medium text-purple-300">
                       {sourceType === "instagram" ? "Instagram Post" : "YouTube Video"}
                     </span>
                   </div>
@@ -520,14 +447,14 @@ export default function RepurposePage() {
               {(mutation.data || missionData) && (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                    <h3 className="flex items-center gap-2 text-2xl font-bold text-white">
                       <Zap className="h-6 w-6 text-yellow-400" />
                       {missionData ? "Existing Results" : "Mission Complete"}
                     </h3>
                     <Button
                       variant="outline"
                       onClick={handleReset}
-                      className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                      className="border-white/20 bg-white/10 text-white hover:bg-white/20"
                     >
                       New Mission
                     </Button>
@@ -538,7 +465,8 @@ export default function RepurposePage() {
             </CardContent>
           </Card>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* features */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {[
               {
                 icon: Globe,
@@ -567,16 +495,14 @@ export default function RepurposePage() {
             ].map((feature, index) => (
               <Card
                 key={index}
-                className="bg-white/5 backdrop-blur-sm border-white/10 hover:bg-white/10 transition-all duration-300 group"
+                className="group w-full border-white/10 bg-white/5 backdrop-blur-sm transition-all duration-300 hover:bg-white/10"
               >
-                <CardContent className="p-6 text-center space-y-4">
-                  <div
-                    className={`w-12 h-12 mx-auto rounded-xl bg-gradient-to-r ${feature.color} p-3 group-hover:scale-110 transition-transform duration-300`}
-                  >
+                <CardContent className="space-y-4 p-6 text-center">
+                  <div className={`mx-auto h-12 w-12 rounded-xl bg-gradient-to-r ${feature.color} p-3 transition-transform duration-300 group-hover:scale-110`}>
                     <feature.icon className="h-6 w-6 text-white" />
                   </div>
-                  <h4 className="font-bold text-white text-lg">{feature.title}</h4>
-                  <p className="text-gray-300 text-sm leading-relaxed">{feature.desc}</p>
+                  <h4 className="text-lg font-bold text-white">{feature.title}</h4>
+                  <p className="text-sm leading-relaxed text-gray-300">{feature.desc}</p>
                 </CardContent>
               </Card>
             ))}
@@ -593,5 +519,3 @@ export default function RepurposePage() {
     </div>
   )
 }
-
-

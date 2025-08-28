@@ -201,12 +201,7 @@ export default function LibraryPage() {
                 Your saved social media content for inspiration and repurposing
               </p>
             </div>
-            <Link href="/">
-              <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
-                <Sparkles className="h-4 w-4 mr-2" />
-                New Repurpose
-              </Button>
-            </Link>
+           
           </div>
         </div>
 

@@ -67,3 +67,24 @@ export interface Mission {
   createdAt: string
   outputs: GeneratedContent
 }
+
+
+export type ReferenceItem = {
+  id: string;
+  title?: string;
+  url?: string;
+  platform?: "youtube" | "instagram" | "tiktok" | "web";
+  summary?: string;           // ~400–600 chars
+  key_points?: string[];      // optional
+};
+
+export type PastMissionSummary = {
+  id: string;
+  title?: string;
+  createdAt?: string;
+  summary: string;            // ~400–600 chars
+  tone_hint?: string;
+  performance_score?: number; // 0..1
+};
+
+

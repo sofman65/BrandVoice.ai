@@ -2,11 +2,12 @@ import { type NextRequest, NextResponse } from "next/server"
 import { auth, currentUser } from "@clerk/nextjs/server"
 // import { fetchInstagram } from "@/lib/instagram"
 import { fetchYouTubeData } from "@/lib/youtube"
-import { generateContent, transcribeAudio } from "@/lib/openai"
+import { generateContent, transcribeAudio, generateContentWithVoice } from "@/lib/openai"
 import { checkRateLimit } from "@/lib/rate-limit"
 import { userMessageFromError, newRequestId } from "@/lib/errors"
 import { isValidInstagramUrl, isValidYouTubeUrl } from "@/lib/utils"
 // import { MetaGraphAPIError } from "@/lib/meta-graph"
+import { ProcessPayloadSchema } from "@/lib/models/dto"
 
 // Temporary stub for Instagram functionality
 async function fetchInstagram(url: string) {
@@ -50,10 +51,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Parse request body
-    let body
+    // Parse request body (supports new DTO while remaining permissive)
+    let body: any
     try {
-      body = await request.json()
+      const raw = await request.json()
+      const parsed = ProcessPayloadSchema.safeParse(raw)
+      body = parsed.success ? parsed.data : raw
     } catch (parseError) {
       return NextResponse.json(
         {
@@ -64,7 +67,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { url, referenceContent } = body
+    const { url } = body
 
     if (!url || typeof url !== "string") {
       return NextResponse.json(
@@ -94,7 +97,7 @@ export async function POST(request: NextRequest) {
 
     // Load user's preferred Brand Voice from Clerk public metadata (fallback default)
     const user = await currentUser()
-    const brandVoice = (user?.publicMetadata?.brandVoice ?? {
+    const brandVoice = (body.voice ?? user?.publicMetadata?.brandVoice ?? {
       id: "default",
       name: "Default",
       tone: "confident, helpful, friendly",
@@ -199,17 +202,30 @@ export async function POST(request: NextRequest) {
     try {
       console.log("Generating content...")
       console.log("📝 Source data:", { content: sourceData.content, hasTranscript: !!transcript })
-      console.log("📚 Reference content:", referenceContent ? "Available" : "None")
-      
-      // Inject brand voice into caption before generation
-      let preface = `Rewrite in this Brand Voice profile:\n- Tone: ${brandVoice.tone}\n- Style: ${brandVoice.style}\n- Vocabulary: ${brandVoice.vocabulary}\n- Audience: ${brandVoice.audience}\n- CTA Style: ${brandVoice.ctaStyle}\n- Hashtags to consider: ${(brandVoice.hashtags || []).join(", ")}`
-      
-      // Add reference content context if available
-      if (referenceContent) {
-        preface += `\n\nUse this reference content as inspiration for style, tone, and approach:\nTitle: ${referenceContent.title}\nDescription: ${referenceContent.description}\nTags: ${referenceContent.tags.join(", ")}\nPlatform: ${referenceContent.platform}`
-      }
-      
-      generatedContent = await generateContent(`${preface}\n\n${sourceData.content}`, transcript)
+
+      // Support legacy 'referenceContent' by mapping it into referenceItems
+      const referenceItems = Array.isArray(body.referenceItems) ? body.referenceItems :
+        body.referenceContent ? [
+          {
+            id: "legacy-0",
+            title: body.referenceContent.title,
+            platform: body.referenceContent.platform,
+            summary: body.referenceContent.description,
+            key_points: Array.isArray(body.referenceContent.tags) ? body.referenceContent.tags : undefined,
+          },
+        ] : undefined
+
+      // Prefer the new orchestrator so we can pass context
+      generatedContent = await generateContentWithVoice({
+        caption: sourceData.content,
+        transcript,
+        voice: brandVoice as any,
+        referenceItems,
+        pastMissions: body.pastMissions,
+        presetNote: body.presetNote,
+        targetNotes: body.targetNotes,
+        autoImage: typeof body.autoImage === "boolean" ? body.autoImage : (process.env.AUTO_IMAGE_GEN === "true"),
+      })
       console.log("✅ Content generation completed:", generatedContent)
     } catch (generateError) {
       const requestId = newRequestId()
@@ -235,9 +251,9 @@ export async function POST(request: NextRequest) {
           transcript_length: transcript?.length || 0,
           timestamp: sourceData.timestamp,
           video_id: sourceData.video_id || null,
-          has_reference_content: !!referenceContent,
-          reference_content_title: referenceContent?.title || null,
-          reference_content_platform: referenceContent?.platform || null,
+          has_reference_content: Array.isArray(body.referenceItems) ? body.referenceItems.length > 0 : !!body.referenceContent,
+          reference_content_title: Array.isArray(body.referenceItems) ? (body.referenceItems[0]?.title || null) : (body.referenceContent?.title || null),
+          reference_content_platform: Array.isArray(body.referenceItems) ? (body.referenceItems[0]?.platform || null) : (body.referenceContent?.platform || null),
         },
       },
       {
