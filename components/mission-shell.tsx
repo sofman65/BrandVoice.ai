@@ -10,10 +10,13 @@ type Props = {
 };
 
 export function MissionShell({ sidebar, detail }: Props) {
-  const [collapsed, setCollapsed] = React.useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("sidebarCollapsed") === "true";
-  });
+  const [collapsed, setCollapsed] = React.useState<boolean>(false);
+
+  // Initialize collapsed state from localStorage after hydration
+  React.useEffect(() => {
+    const savedCollapsed = localStorage.getItem("sidebarCollapsed") === "true";
+    setCollapsed(savedCollapsed);
+  }, []);
 
   // keep sidebar width in a CSS var so grid is stable
   React.useEffect(() => {
@@ -31,7 +34,7 @@ export function MissionShell({ sidebar, detail }: Props) {
   }, []);
 
   return (
-    <div className="min-h-screen w-full">
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       {/* Desktop: sidebar + canvas. Mobile: only canvas; sidebar appears via AppTopbar sheet. */}
       <div className="grid min-h-screen md:grid-cols-[var(--sb-w,_18rem)_1fr]">
         <aside className="hidden md:block w-[var(--sb-w,_18rem)]">{sidebar}</aside>

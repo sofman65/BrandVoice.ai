@@ -26,10 +26,13 @@ export function MissionSidebar({ className }: Props) {
   const pathname = usePathname();
   const params = useParams();
 
-  const [collapsed, setCollapsed] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("sidebarCollapsed") === "true";
-  });
+  const [collapsed, setCollapsed] = useState<boolean>(false);
+
+  // Initialize collapsed state from localStorage after hydration
+  useEffect(() => {
+    const savedCollapsed = localStorage.getItem("sidebarCollapsed") === "true";
+    setCollapsed(savedCollapsed);
+  }, []);
 
   // expose width to layout
   useEffect(() => {
@@ -44,9 +47,13 @@ export function MissionSidebar({ className }: Props) {
   };
 
   const [isLoading, setIsLoading] = useState(false);
-  const [currentMissionId, setCurrentMissionId] = useState<string | null>(() =>
-    typeof window !== "undefined" ? localStorage.getItem("currentMissionId") : null
-  );
+  const [currentMissionId, setCurrentMissionId] = useState<string | null>(null);
+
+  // Initialize currentMissionId from localStorage after hydration
+  useEffect(() => {
+    const savedMissionId = localStorage.getItem("currentMissionId");
+    setCurrentMissionId(savedMissionId);
+  }, []);
 
   useEffect(() => {
     if (pathname === "/") {

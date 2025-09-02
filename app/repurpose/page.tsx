@@ -10,8 +10,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
-  Loader2, Sparkles, Rocket, Zap, Globe, Video, Check, Bookmark, X,
+  Loader2, Sparkles, Rocket, Zap, Globe, Video, Check, Bookmark, X, ChevronDown,
 } from "lucide-react"
+import { VoicePicker } from "@/components/voice-picker"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { ContentSelectorModal } from "@/components/content-selector-modal"
 import { isValidInstagramUrl, isValidYouTubeUrl } from "@/lib/utils"
 import { InstagramPreview } from "@/components/instagram-preview"
@@ -50,6 +60,8 @@ export default function RepurposePage() {
   const [existingMissionId, setExistingMissionId] = useState<string | null>(null)
   const [referenceContent, setReferenceContent] = useState<ReferenceContent | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedVoice, setSelectedVoice] = useState<{ id: string; label: string; hint?: string } | null>(null)
+  const [mode, setMode] = useState<"auto" | "speed" | "quality">("auto")
 
   const mutation = useMutation({
     mutationFn: async (contentUrl: string): Promise<GeneratedContent> => {
@@ -285,70 +297,135 @@ export default function RepurposePage() {
   }
 
   return (
-    <div className="relative overflow-hidden">
-      <MultiStepLoader loadingStates={loadingStates} loading={mutation.isPending} duration={1200} />
-
-
-      {/* canvas */}
-      <div className="relative z-10 py-8 px-4 md:px-6">
-        {/* header row */}
-        <div className="mb-6 mr-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="text-sm text-purple-300 hover:text-purple-200">
+    <div className="relative">
+      <MultiStepLoader
+        loadingStates={loadingStates}
+        loading={mutation.isPending}
+        duration={1200}
+      />
+  
+      {/* Canvas — MissionShell provides the dark gradient background */}
+      <div className="relative z-10 px-4 py-6 sm:px-6 lg:px-8">
+        {/* Top breadcrumb / link */}
+        <div className="mb-10">
+          <div className="flex items-center gap-2">
+            <Link
+              href="/"
+              className="text-sm text-purple-300 hover:text-purple-200"
+            >
               Back to Mission Log
             </Link>
+
+            {/* Controls placed next to sidebar (ChatGPT-style) */}
+            <div className="ml-2 flex items-center gap-2">
+              <VoicePicker
+                value={selectedVoice}
+                onChange={setSelectedVoice}
+                options={[
+                  { id: "default", label: "Default", hint: "Clear, friendly" },
+                  { id: "direct",  label: "Direct",  hint: "Punchy, concise" },
+                  { id: "warm",    label: "Warm",    hint: "Approachable" },
+                  { id: "bold",    label: "Bold",    hint: "High-energy" },
+                ]}
+              />
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="h-9 gap-2 rounded-lg border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                  >
+                    Repurpose Mode
+                    <ChevronDown className="h-4 w-4 opacity-70" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="start"
+                  className="w-56 border-white/10 bg-[#0b0b15] text-white"
+                >
+                  <DropdownMenuLabel className="text-xs text-white/70">
+                    Select mode
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuRadioGroup
+                    value={mode}
+                    onValueChange={(v) => setMode(v as typeof mode)}
+                  >
+                    <DropdownMenuRadioItem value="auto">Auto (balanced)</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="speed">Fast draft</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="quality">Polished</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
-
-        {/* STABLE CENTERED WIDTH (independent of sidebar) */}
-        <div className="mx-auto w-full max-w-[1100px] space-y-12 transition-all duration-300">
-          {/* hero */}
-          <div className="space-y-6 text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-purple-500/30 bg-purple-500/20 px-4 py-2 text-sm font-medium text-purple-300">
+  
+        {/* Stable centered width */}
+        <div className="mx-auto w-full max-w-screen-lg space-y-10">
+          {/* Hero */}
+          <section className="text-center space-y-5">
+            <div className="inline-flex items-center gap-2 rounded-full border border-purple-500/30 bg-purple-500/20 px-3 py-1.5 text-xs sm:text-sm font-medium text-purple-300">
               <Sparkles className="h-4 w-4" />
               Powered by Spaceslam Technology
             </div>
-            <h2 className="text-5xl font-bold leading-tight text-white md:text-6xl">
+  
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-tight [text-wrap:balance]">
               Transform Your
               <span className="block bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
                 Social Content
               </span>
-            </h2>
-            <p className="mx-auto max-w-3xl text-xl leading-relaxed text-gray-300">
-              Launch your content into the stratosphere with BrandVoice.ai. Convert any Instagram post
-              or YouTube video into multi-platform content that reaches every corner of the digital universe.
+            </h1>
+  
+            <p className="mx-auto max-w-2xl text-base sm:text-lg text-gray-300">
+              Paste a YouTube or Instagram link and get platform-ready content in your brand voice.
             </p>
-          </div>
-
-          {/* reference content */}
-          <Card className="mb-6 border-white/20 bg-white/10 shadow-2xl backdrop-blur-xl">
-            <CardHeader className="pb-4">
+          </section>
+  
+          {/* Reference content */}
+          <Card className="border-white/10 bg-white/5 backdrop-blur supports-[backdrop-filter]:bg-white/10">
+            <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-purple-300" />
-                  <CardTitle className="text-lg font-bold text-white">Reference Content (Optional)</CardTitle>
+                  <CardTitle className="text-white text-base sm:text-lg">
+                    Reference Content (Optional)
+                  </CardTitle>
                 </div>
                 {referenceContent && (
-                  <Button variant="ghost" size="sm" onClick={clearReference} className="text-gray-400 hover:text-white">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearReference}
+                    className="text-gray-400 hover:text-white"
+                  >
                     <X className="h-4 w-4" />
                   </Button>
                 )}
               </div>
               <CardDescription className="text-gray-300">
-                Choose content from your library to use as inspiration for your new repurpose
+                Pick items from your Content Bank to influence tone/structure.
               </CardDescription>
             </CardHeader>
+  
             <CardContent className="pt-0">
               {referenceContent ? (
                 <div className="rounded-lg border border-purple-500/30 bg-gradient-to-r from-purple-500/20 to-pink-500/20 p-4">
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-start gap-3">
                     <div className="flex-shrink-0">{getPlatformIcon(referenceContent.platform)}</div>
                     <div className="min-w-0 flex-1">
-                      <h4 className="mb-1 line-clamp-1 font-semibold text-white">{referenceContent.title}</h4>
-                      <p className="mb-2 line-clamp-2 text-sm text-gray-300">{referenceContent.description}</p>
+                      <h4 className="mb-1 line-clamp-1 font-semibold text-white">
+                        {referenceContent.title}
+                      </h4>
+                      <p className="mb-2 line-clamp-2 text-sm text-gray-300">
+                        {referenceContent.description}
+                      </p>
                       <div className="flex flex-wrap gap-1">
                         {referenceContent.tags.slice(0, 3).map((tag, idx) => (
-                          <span key={idx} className="rounded-full bg-purple-500/20 px-2 py-1 text-xs text-purple-200">
+                          <span
+                            key={idx}
+                            className="rounded-full bg-purple-500/20 px-2 py-0.5 text-xs text-purple-200"
+                          >
                             {tag}
                           </span>
                         ))}
@@ -357,8 +434,10 @@ export default function RepurposePage() {
                   </div>
                 </div>
               ) : (
-                <div className="py-8 text-center">
-                  <div className="mb-4 text-gray-400">No reference content selected</div>
+                <div className="py-6 text-center">
+                  <div className="mb-3 text-sm text-gray-400">
+                    No reference content selected
+                  </div>
                   <Button
                     onClick={() => setIsModalOpen(true)}
                     variant="outline"
@@ -371,71 +450,76 @@ export default function RepurposePage() {
               )}
             </CardContent>
           </Card>
-
-          {/* mission control */}
-          <Card className="border-white/20 bg-white/10 shadow-2xl backdrop-blur-xl">
-            <CardHeader className="pb-8 text-center">
-              <CardTitle className="mb-2 text-2xl font-bold text-white">Mission Control Center</CardTitle>
-              <CardDescription className="text-lg text-gray-300">
+  
+          {/* Mission control */}
+          <Card className="border-white/10 bg-white/5 backdrop-blur supports-[backdrop-filter]:bg-white/10">
+            <CardHeader className="pb-6 text-center">
+              <CardTitle className="text-2xl font-bold text-white">
+                Mission Control Center
+              </CardTitle>
+              <CardDescription className="text-gray-300">
                 {referenceContent
-                  ? `Enter Instagram or YouTube URL to repurpose with "${referenceContent.title}" as inspiration`
-                  : "Enter Instagram or YouTube URL to begin content transformation"}
+                  ? `Repurpose with “${referenceContent.title}” as inspiration`
+                  : "Enter Instagram or YouTube URL to begin"}
               </CardDescription>
             </CardHeader>
-
-            <CardContent className="space-y-8">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-3">
-                  <Label htmlFor="mission-url" className="text-lg font-medium text-white">
-                    URL
-                  </Label>
-                  <div className="flex gap-4">
-                    <Input
-                      id="mission-url"
-                      type="url"
-                      placeholder="https://www.instagram.com/p/... or https://www.youtube.com/watch?v=..."
-                      value={url}
-                      onChange={(e) => handleUrlChange(e.target.value)}
-                      className="h-14 flex-1 border-white/20 bg-white/10 text-lg text-white placeholder:text-gray-400 focus:border-purple-400 focus:ring-purple-400/20"
-                      disabled={mutation.isPending}
-                    />
-                    <Button
-                      type="submit"
-                      disabled={mutation.isPending || !previewData || !!missionData}
-                      className="h-14 px-8 font-semibold text-lg text-white shadow-lg transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50 bg-gradient-to-r from-purple-600 to-pink-700 hover:shadow-purple-500/25"
-                    >
-                      {mutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                          Repurposing...
-                        </>
-                      ) : missionData ? (
-                        <>
-                          <Check className="mr-2 h-5 w-5" />
-                          Already Processed
-                        </>
-                      ) : (
-                        <>
-                          <Rocket className="mr-2 h-5 w-5" />
-                          Repurpose
-                        </>
-                      )}
-                    </Button>
-                  </div>
+  
+            <CardContent className="space-y-6">
+              {/* URL form */}
+              <form onSubmit={handleSubmit} className="space-y-3">
+                <Label htmlFor="mission-url" className="text-white text-sm sm:text-base">
+                  URL
+                </Label>
+  
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Input
+                    id="mission-url"
+                    inputMode="url"
+                    type="url"
+                    placeholder="https://www.instagram.com/p/... or https://www.youtube.com/watch?v=..."
+                    value={url}
+                    onChange={(e) => handleUrlChange(e.target.value)}
+                    className="h-12 flex-1 border-white/20 bg-white/10 text-white placeholder:text-gray-400 focus:border-purple-400 focus:ring-purple-400/20"
+                    disabled={mutation.isPending}
+                  />
+  
+                  <Button
+                    type="submit"
+                    disabled={mutation.isPending || !previewData || !!missionData}
+                    className="h-12 sm:w-auto w-full bg-gradient-to-r from-purple-600 to-pink-700 text-white font-semibold shadow-lg hover:shadow-purple-500/25 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {mutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Repurposing…
+                      </>
+                    ) : missionData ? (
+                      <>
+                        <Check className="mr-2 h-5 w-5" />
+                        Already Processed
+                      </>
+                    ) : (
+                      <>
+                        <Rocket className="mr-2 h-5 w-5" />
+                        Repurpose
+                      </>
+                    )}
+                  </Button>
                 </div>
               </form>
-
+  
+              {/* Preview */}
               {showPreview && (
-                <div className="rounded-lg bg-white/10 p-4">
+                <div className="rounded-lg bg-white/5 p-4">
                   <div className="mb-3 flex items-center justify-between">
-                    <h4 className="text-xl font-bold text-white">
+                    <h4 className="text-lg font-semibold text-white">
                       {sourceType === "instagram" ? "Instagram Preview" : "YouTube Preview"}
                     </h4>
                     <span className="rounded-full bg-purple-500/20 px-3 py-1 text-xs font-medium text-purple-300">
                       {sourceType === "instagram" ? "Instagram Post" : "YouTube Video"}
                     </span>
                   </div>
-
+  
                   {sourceType === "instagram" ? (
                     <InstagramPreview url={url} data={previewData} isLoading={!previewData} />
                   ) : (
@@ -443,11 +527,12 @@ export default function RepurposePage() {
                   )}
                 </div>
               )}
-
+  
+              {/* Results */}
               {(mutation.data || missionData) && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h3 className="flex items-center gap-2 text-2xl font-bold text-white">
+                <div className="space-y-5">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <h3 className="text-2xl font-bold text-white flex items-center gap-2">
                       <Zap className="h-6 w-6 text-yellow-400" />
                       {missionData ? "Existing Results" : "Mission Complete"}
                     </h3>
@@ -459,57 +544,58 @@ export default function RepurposePage() {
                       New Mission
                     </Button>
                   </div>
+  
                   <ContentResults data={missionData || mutation.data!} />
                 </div>
               )}
             </CardContent>
           </Card>
-
-          {/* features */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+  
+          {/* Features */}
+          <section className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              {
-                icon: Globe,
-                title: "LinkedIn Posts",
-                desc: "Professional networking content optimized for business audiences",
-                color: "from-blue-500 to-cyan-500",
-              },
-              {
-                icon: Sparkles,
-                title: "Instagram Carousels",
-                desc: "Multi-slide storytelling that captivates and engages",
-                color: "from-pink-500 to-rose-500",
-              },
-              {
-                icon: Zap,
-                title: "Threads Posts",
-                desc: "Conversational content that sparks meaningful discussions",
-                color: "from-purple-500 to-indigo-500",
-              },
-              {
-                icon: Video,
-                title: "Video Scripts",
-                desc: "Ready-to-film scripts for Reels and TikTok content",
-                color: "from-green-500 to-emerald-500",
-              },
-            ].map((feature, index) => (
+              { icon: Globe, title: "LinkedIn Posts", desc: "Professional, long-form insights", color: "from-blue-500 to-cyan-500" },
+              { icon: Sparkles, title: "Instagram Carousels", desc: "5 slides with story flow", color: "from-pink-500 to-rose-500" },
+              { icon: Zap, title: "Threads Posts", desc: "Short conversational hooks", color: "from-purple-500 to-indigo-500" },
+              { icon: Video, title: "Video Scripts", desc: "Ready to film in minutes", color: "from-green-500 to-emerald-500" },
+            ].map((f, i) => (
               <Card
-                key={index}
-                className="group w-full border-white/10 bg-white/5 backdrop-blur-sm transition-all duration-300 hover:bg-white/10"
+                key={i}
+                className="group border-white/10 bg-white/5 backdrop-blur-sm transition-colors hover:bg-white/10"
               >
-                <CardContent className="space-y-4 p-6 text-center">
-                  <div className={`mx-auto h-12 w-12 rounded-xl bg-gradient-to-r ${feature.color} p-3 transition-transform duration-300 group-hover:scale-110`}>
-                    <feature.icon className="h-6 w-6 text-white" />
+                <CardContent className="p-5 sm:p-6 text-center space-y-3">
+                  <div className={`mx-auto h-12 w-12 rounded-xl bg-gradient-to-r ${f.color} p-3 transition-transform group-hover:scale-110`}>
+                    <f.icon className="h-6 w-6 text-white" />
                   </div>
-                  <h4 className="text-lg font-bold text-white">{feature.title}</h4>
-                  <p className="text-sm leading-relaxed text-gray-300">{feature.desc}</p>
+                  <h4 className="text-white font-semibold">{f.title}</h4>
+                  <p className="text-sm text-gray-300">{f.desc}</p>
                 </CardContent>
               </Card>
             ))}
+          </section>
+        </div>
+      </div>
+  
+      {/* Mobile sticky CTA (helps conversion on small screens) */}
+      <div className="md:hidden sticky bottom-3 inset-x-0 z-20 px-4">
+        <div className="mx-auto max-w-screen-sm rounded-xl border border-white/10 bg-white/10 backdrop-blur supports-[backdrop-filter]:bg-white/20 p-2 shadow-lg">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-purple-300" />
+            <p className="text-sm text-white/90 flex-1">Paste a link to start repurposing.</p>
+            <Button
+              onClick={() => {
+                const el = document.getElementById("mission-url");
+                el?.focus();
+                el?.scrollIntoView({ behavior: "smooth", block: "center" });
+              }}
+              className="h-8 px-3 bg-gradient-to-r from-purple-600 to-pink-700"
+            >
+              Start
+            </Button>
           </div>
         </div>
       </div>
-
+  
       {/* Content Selector Modal */}
       <ContentSelectorModal
         isOpen={isModalOpen}
@@ -517,5 +603,5 @@ export default function RepurposePage() {
         onSelect={handleSelectReference}
       />
     </div>
-  )
+  );
 }
