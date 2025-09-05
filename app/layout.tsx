@@ -8,6 +8,7 @@ import type React from "react";
 import "./globals.css";
 import { MissionSidebar } from "@/components/mission-sidebar";
 import { MissionShell } from "@/components/mission-shell";
+import { OnboardingWrapper } from "@/components/onboarding-wrapper";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -95,7 +96,9 @@ export default function RootLayout({
           >
             <QueryProvider>
               <SignedIn>
-                <MissionShell sidebar={<MissionSidebar />} detail={children} />
+                <OnboardingWrapper>
+                  <MissionShell sidebar={<MissionSidebar />} detail={children} />
+                </OnboardingWrapper>
               </SignedIn>
               <SignedOut>
                 {children}

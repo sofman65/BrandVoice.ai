@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea"
 import { CopyButton } from "@/components/copy-button"
 import { Badge } from "@/components/ui/badge"
+import { VoiceAlertBanner } from "@/components/voice-alert-banner"
 import { Linkedin, Instagram, MessageCircle, Video, Sparkles, ImageIcon } from "lucide-react"
 import type { GeneratedContent, CarouselSlide } from "@/lib/types"
 import { useState } from "react"
@@ -67,8 +68,12 @@ export function ContentResults({ data }: ContentResultsProps) {
   }
 
   return (
-    <Tabs defaultValue="linkedin" className="w-full">
-      <TabsList className="grid w-full grid-cols-4 bg-white/10 backdrop-blur-sm border-white/20">
+    <div className="w-full">
+      {/* Voice Alert Banner */}
+      <VoiceAlertBanner />
+      
+      <Tabs defaultValue="linkedin" className="w-full">
+        <TabsList className="grid w-full grid-cols-4 bg-white/10 backdrop-blur-sm border-white/20">
         <TabsTrigger
           value="linkedin"
           className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-300 text-gray-300"
@@ -262,5 +267,6 @@ export function ContentResults({ data }: ContentResultsProps) {
         </Card>
       </TabsContent>
     </Tabs>
+    </div>
   )
 }

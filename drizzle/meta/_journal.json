@@ -22,6 +22,27 @@
       "when": 1756881485184,
       "tag": "0002_exotic_orphan",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1757097323164,
+      "tag": "0003_brown_eternity",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1757102688361,
+      "tag": "0004_green_pet_avengers",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1757103484204,
+      "tag": "0005_fuzzy_wilson_fisk",
+      "breakpoints": true
     }
   ]
 }

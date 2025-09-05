@@ -8,6 +8,8 @@ import { userMessageFromError, newRequestId } from "@/lib/errors"
 import { isValidInstagramUrl, isValidYouTubeUrl } from "@/lib/utils"
 // import { MetaGraphAPIError } from "@/lib/meta-graph"
 import { ProcessPayloadSchema } from "@/lib/models/dto"
+import { db } from "@/lib/db"
+import { missionOutcomes } from "@/lib/db/schema"
 
 // Temporary stub for Instagram functionality
 async function fetchInstagram(url: string) {
@@ -238,10 +240,67 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Save generated content to mission_outcomes table if missionId is provided
+    let savedOutcomes: any[] = []
+    if (body.missionId && generatedContent) {
+      try {
+        console.log("💾 Saving outcomes to database for mission:", body.missionId)
+        
+        const outcomesToSave = [
+          {
+            id: crypto.randomUUID(),
+            missionId: body.missionId,
+            type: 'linkedin_post',
+            title: 'LinkedIn Post',
+            content: generatedContent.linkedin,
+            metadata: null,
+            status: 'draft',
+          },
+          {
+            id: crypto.randomUUID(),
+            missionId: body.missionId,
+            type: 'threads',
+            title: 'Threads Post',
+            content: generatedContent.threads,
+            metadata: null,
+            status: 'draft',
+          },
+          {
+            id: crypto.randomUUID(),
+            missionId: body.missionId,
+            type: 'instagram_carousel',
+            title: 'Instagram Carousel',
+            content: JSON.stringify(generatedContent.carousel),
+            metadata: { 
+              slideCount: generatedContent.carousel?.length || 0,
+              slides: generatedContent.carousel 
+            },
+            status: 'draft',
+          },
+          {
+            id: crypto.randomUUID(),
+            missionId: body.missionId,
+            type: 'video_script',
+            title: 'Video Script',
+            content: generatedContent.video_script,
+            metadata: null,
+            status: 'draft',
+          }
+        ]
+
+        savedOutcomes = await db.insert(missionOutcomes).values(outcomesToSave).returning()
+        console.log("✅ Saved outcomes to database:", savedOutcomes.length, "outcomes")
+      } catch (saveError) {
+        console.error("⚠️ Failed to save outcomes to database:", saveError)
+        // Don't fail the entire request if saving fails, just log the error
+      }
+    }
+
     return NextResponse.json(
       {
         success: true,
         data: generatedContent,
+        savedOutcomes: savedOutcomes.length > 0 ? savedOutcomes : undefined,
         metadata: {
           source_url: url,
           source_type: sourceData.source_type,
@@ -254,6 +313,8 @@ export async function POST(request: NextRequest) {
           has_reference_content: Array.isArray(body.referenceItems) ? body.referenceItems.length > 0 : !!body.referenceContent,
           reference_content_title: Array.isArray(body.referenceItems) ? (body.referenceItems[0]?.title || null) : (body.referenceContent?.title || null),
           reference_content_platform: Array.isArray(body.referenceItems) ? (body.referenceItems[0]?.platform || null) : (body.referenceContent?.platform || null),
+          outcomes_saved: savedOutcomes.length > 0,
+          mission_id: body.missionId || null,
         },
       },
       {

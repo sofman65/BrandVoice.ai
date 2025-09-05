@@ -28,6 +28,7 @@ export const ProcessPayloadSchema = z.object({
   presetNote: z.string().optional(),
   targetNotes: z.string().optional(),
   autoImage: z.boolean().optional(),
+  missionId: z.string().optional(),          // Optional: if provided, save outcomes to this mission
 });
 
 export type ProcessPayload = z.infer<typeof ProcessPayloadSchema>;

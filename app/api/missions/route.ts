@@ -60,12 +60,6 @@ export async function POST(req: Request) {
       sourceUrl: json.sourceUrl ?? "",
       description: json.description ?? null,
       pinned: Boolean(json.pinned ?? false),
-      outputs: json.outputs || {
-        linkedin: "",
-        carousel: [],
-        threads: "",
-        videoScript: ""
-      },
     };
 
     const inserted = await db.insert(missions).values(record).returning({

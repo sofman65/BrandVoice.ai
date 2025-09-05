@@ -8,26 +8,68 @@ import { Loader2, ArrowLeft, Copy, Check, Zap, Globe, Video, Sparkles } from "lu
 import { toast } from "sonner"
 import Link from "next/link"
 import { ContentResults } from "@/components/content-results"
-import type { Mission } from "@/lib/types"
+import type { Mission, MissionOutcome, GeneratedContent } from "@/lib/types"
+
+// Helper function to transform outcomes into GeneratedContent format
+function transformOutcomesToGeneratedContent(outcomes: MissionOutcome[]): GeneratedContent | null {
+  if (outcomes.length === 0) return null
+
+  const linkedin = outcomes.find(o => o.type === 'linkedin_post')?.content || ''
+  const threads = outcomes.find(o => o.type === 'threads')?.content || ''
+  const video_script = outcomes.find(o => o.type === 'video_script')?.content || ''
+  
+  const carouselOutcome = outcomes.find(o => o.type === 'instagram_carousel')
+  let carousel: any[] = []
+  
+  if (carouselOutcome) {
+    try {
+      // Try to parse the content as JSON first
+      if (carouselOutcome.content.startsWith('[') || carouselOutcome.content.startsWith('{')) {
+        carousel = JSON.parse(carouselOutcome.content)
+      } else {
+        // If not JSON, treat as plain text
+        carousel = [{ heading: "Slide 1", body: carouselOutcome.content }]
+      }
+    } catch {
+      // If parsing fails, use metadata or create default
+      carousel = carouselOutcome.metadata?.slides || [{ heading: "Slide 1", body: carouselOutcome.content }]
+    }
+  }
+
+  // Only return if we have at least some content
+  if (!linkedin && !threads && !video_script && carousel.length === 0) {
+    return null
+  }
+
+  return {
+    linkedin,
+    threads,
+    video_script,
+    carousel
+  }
+}
 
 export default function MissionDetailPage() {
   const params = useParams()
   const [mission, setMission] = useState<Mission | null>(null)
+  const [outcomes, setOutcomes] = useState<MissionOutcome[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchMission = async () => {
+    const fetchMissionAndOutcomes = async () => {
       if (!params.id) return
 
       try {
         setIsLoading(true)
-        const res = await fetch(`/api/missions/${params.id}`, {
+        
+        // Fetch mission details
+        const missionRes = await fetch(`/api/missions/${params.id}`, {
           credentials: "include"
         })
 
-        if (!res.ok) {
-          if (res.status === 404) {
+        if (!missionRes.ok) {
+          if (missionRes.status === 404) {
             setError("Mission not found")
           } else {
             setError("Failed to load mission")
@@ -35,10 +77,23 @@ export default function MissionDetailPage() {
           return
         }
 
-        const data = await res.json()
-        console.log("🔍 Mission data received:", data.data)
-        console.log("🔍 Mission outputs:", data.data?.outputs)
-        setMission(data.data)
+        const missionData = await missionRes.json()
+        console.log("🔍 Mission data received:", missionData.data)
+        setMission(missionData.data)
+
+        // Fetch mission outcomes
+        const outcomesRes = await fetch(`/api/missions/${params.id}/outcomes`, {
+          credentials: "include"
+        })
+
+        if (outcomesRes.ok) {
+          const outcomesData = await outcomesRes.json()
+          console.log("🔍 Mission outcomes received:", outcomesData.data)
+          setOutcomes(outcomesData.data || [])
+        } else {
+          console.warn("Failed to load mission outcomes")
+          setOutcomes([])
+        }
       } catch (err) {
         console.error("Error fetching mission:", err)
         setError("Failed to load mission")
@@ -47,7 +102,7 @@ export default function MissionDetailPage() {
       }
     }
 
-    fetchMission()
+    fetchMissionAndOutcomes()
   }, [params.id])
 
   if (isLoading) {
@@ -147,16 +202,19 @@ export default function MissionDetailPage() {
               <Zap className="h-6 w-6 text-yellow-400" />
               <h2 className="text-2xl font-bold text-white">Generated Content</h2>
             </div>
-            {mission.outputs && Object.keys(mission.outputs).length > 0 ? (
-              <ContentResults data={mission.outputs} />
-            ) : (
-              <div className="bg-white/5 rounded-lg p-6 text-center">
-                <p className="text-gray-400 mb-4">No generated content available for this mission.</p>
-                <p className="text-sm text-gray-500">
-                  This mission may not have been completed or the content generation failed.
-                </p>
-              </div>
-            )}
+            {(() => {
+              const generatedContent = transformOutcomesToGeneratedContent(outcomes)
+              return generatedContent ? (
+                <ContentResults data={generatedContent} />
+              ) : (
+                <div className="bg-white/5 rounded-lg p-6 text-center">
+                  <p className="text-gray-400 mb-4">No generated content available for this mission.</p>
+                  <p className="text-sm text-gray-500">
+                    This mission may not have been completed or the content generation failed.
+                  </p>
+                </div>
+              )
+            })()}
           </div>
         </div>
       </div>

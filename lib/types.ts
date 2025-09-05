@@ -44,7 +44,9 @@ export type GeneratedContent = z.infer<typeof GeneratedContentSchema>
 // ADDITIONAL TYPES (not covered by schemas)
 // ============================================================================
 
-export type MissionPlatform = "youtube" | "instagram"
+export type MissionPlatform = "youtube" | "instagram" | "tiktok" | "upload"
+export type OutcomeType = "threads" | "linkedin_post" | "instagram_carousel" | "video_script"
+export type OutcomeStatus = "draft" | "final" | "published" | "archived"
 
 export interface MissionListItem {
   id: string
@@ -62,10 +64,51 @@ export interface Mission {
   title: string
   platform: MissionPlatform
   sourceUrl: string
+  sourceExternalId?: string
   description?: string
   pinned: boolean
   createdAt: string
-  outputs: GeneratedContent
+  updatedAt: string
+}
+
+export interface MissionOutcome {
+  id: string
+  missionId: string
+  type: OutcomeType
+  title?: string
+  content: string
+  metadata?: any // Type-specific data: { threadCount, slideCount, estimatedDuration, scenes, slides, etc. }
+  status: OutcomeStatus
+  createdAt: string
+  updatedAt: string
+}
+
+export interface VoiceProfile {
+  id: string
+  userId: string
+  name: string
+  basePresetId?: string
+  tone: string
+  audience: string
+  keywords?: string[] // Now an array instead of comma-separated
+  vocabulary?: string[]
+  cta?: string
+  hashtags?: string[]
+  style?: string
+  isDefault: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface OnboardingProgress {
+  id: string
+  userId: string
+  currentStep: number
+  platformConnected?: MissionPlatform
+  voiceProfileId?: string
+  isCompleted: boolean
+  createdAt: string
+  updatedAt: string
 }
 
 
