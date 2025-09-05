@@ -9,45 +9,7 @@ import { toast } from "sonner"
 import Link from "next/link"
 import { ContentResults } from "@/components/content-results"
 import type { Mission, MissionOutcome, GeneratedContent } from "@/lib/types"
-
-// Helper function to transform outcomes into GeneratedContent format
-function transformOutcomesToGeneratedContent(outcomes: MissionOutcome[]): GeneratedContent | null {
-  if (outcomes.length === 0) return null
-
-  const linkedin = outcomes.find(o => o.type === 'linkedin_post')?.content || ''
-  const threads = outcomes.find(o => o.type === 'threads')?.content || ''
-  const video_script = outcomes.find(o => o.type === 'video_script')?.content || ''
-  
-  const carouselOutcome = outcomes.find(o => o.type === 'instagram_carousel')
-  let carousel: any[] = []
-  
-  if (carouselOutcome) {
-    try {
-      // Try to parse the content as JSON first
-      if (carouselOutcome.content.startsWith('[') || carouselOutcome.content.startsWith('{')) {
-        carousel = JSON.parse(carouselOutcome.content)
-      } else {
-        // If not JSON, treat as plain text
-        carousel = [{ heading: "Slide 1", body: carouselOutcome.content }]
-      }
-    } catch {
-      // If parsing fails, use metadata or create default
-      carousel = carouselOutcome.metadata?.slides || [{ heading: "Slide 1", body: carouselOutcome.content }]
-    }
-  }
-
-  // Only return if we have at least some content
-  if (!linkedin && !threads && !video_script && carousel.length === 0) {
-    return null
-  }
-
-  return {
-    linkedin,
-    threads,
-    video_script,
-    carousel
-  }
-}
+import { transformOutcomesToGeneratedContent } from "@/lib/utils"
 
 export default function MissionDetailPage() {
   const params = useParams()

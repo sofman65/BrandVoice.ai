@@ -23,6 +23,23 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
+import { formatRelativeDate, getPlatformIconConfig } from "@/lib/utils"
+
+// Utility function for platform icons using centralized config
+const getPlatformIcon = (platform: string) => {
+  const config = getPlatformIconConfig(platform)
+  
+  switch (config.name) {
+    case "youtube":
+      return <Youtube className={config.className} />
+    case "instagram":
+      return <Instagram className={config.className} />
+    case "video":
+      return <Video className={config.className} />
+    default:
+      return <Video className={config.className} />
+  }
+}
 
 interface ContentItem {
   id: string
@@ -139,32 +156,7 @@ export default function LibraryPage() {
     setFilteredItems(filtered)
   }, [contentItems, searchQuery, selectedPlatform])
 
-  const getPlatformIcon = (platform: string) => {
-    switch (platform) {
-      case "youtube":
-        return <Youtube className="h-4 w-4 text-red-500" />
-      case "instagram":
-        return <Instagram className="h-4 w-4 text-pink-500" />
-      case "tiktok":
-        return <Video className="h-4 w-4 text-black" />
-      default:
-        return <Video className="h-4 w-4" />
-    }
-  }
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
-    
-    if (diffInHours < 24) {
-      return `${diffInHours}h ago`
-    } else if (diffInHours < 168) {
-      return `${Math.floor(diffInHours / 24)}d ago`
-    } else {
-      return date.toLocaleDateString()
-    }
-  }
 
   const handleSaveContent = () => {
     toast.success("Content saved to your library!")
@@ -343,7 +335,7 @@ export default function LibraryPage() {
                       </div>
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {formatDate(item.savedAt)}
+                        {formatRelativeDate(item.savedAt)}
                       </span>
                     </div>
                     

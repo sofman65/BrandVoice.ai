@@ -12,23 +12,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 
-// Helper function to handle both string and object carousel slides
-const readableSlide = (slide: CarouselSlide): string => {
-  if (typeof slide === "string") {
-    return slide;
-  }
-
-  // Handle object format with heading and body
-  return `${slide.heading ?? ""}\n\n${slide.body ?? ""}`.trim();
-}
-
-// Helper to get image URL from slide
-const getSlideImage = (slide: CarouselSlide): string | null => {
-  if (typeof slide === "string") {
-    return null;
-  }
-  return slide.imageUrl || null;
-}
+import { readableSlide, getSlideImage } from "@/lib/utils"
 
 // Helper to get image prompt from slide
 const getSlideImagePrompt = (slide: CarouselSlide): string | null => {

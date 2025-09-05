@@ -13,7 +13,15 @@ import {
 } from "lucide-react"
 import { VoicePicker } from "@/components/voice-picker"
 import { ContentSelectorModal } from "@/components/content-selector-modal"
-import { isValidInstagramUrl, isValidYouTubeUrl } from "@/lib/utils"
+import { 
+  validateUrl, 
+  fetchPreviewData, 
+  findExistingMission, 
+  convertVoiceProfileToBrandVoice,
+  type SourceType,
+  type UrlValidationResult 
+} from "@/lib/utils"
+import { useLocalStorage } from "@/hooks/use-local-storage"
 import { InstagramPreview } from "@/components/instagram-preview"
 import { YouTubePreview } from "@/components/youtube-preview"
 import { ContentResults } from "@/components/content-results"
@@ -41,10 +49,6 @@ interface ProcessResponse {
   error?: string
 }
 
-type SourceType = "instagram" | "youtube"
-
-
-
 // Utility functions
 const getPlatformIcon = (platform: string) => {
   const iconMap = {
@@ -53,62 +57,6 @@ const getPlatformIcon = (platform: string) => {
     tiktok: <Video className="h-4 w-4 text-black" />,
   }
   return iconMap[platform as keyof typeof iconMap] || <Video className="h-4 w-4" />
-}
-
-const validateUrl = (url: string) => {
-  if (!url) return { isValid: false, type: null }
-  const isInstagram = isValidInstagramUrl(url)
-  const isYouTube = isValidYouTubeUrl(url)
-  return {
-    isValid: isInstagram || isYouTube,
-    type: isInstagram ? 'instagram' as SourceType : isYouTube ? 'youtube' as SourceType : null
-  }
-}
-
-const fetchPreviewData = async (url: string) => {
-  const response = await fetch("/api/preview", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url }),
-  })
-  if (!response.ok) throw new Error(`HTTP ${response.status}`)
-  const payload = await response.json()
-  if (!payload.success) throw new Error(payload.error || "Failed to fetch preview")
-  return payload.data
-}
-
-const findExistingMission = async (url: string) => {
-  const response = await fetch("/api/missions", { credentials: "include" })
-  if (!response.ok) return null
-  const data = await response.json()
-  return data.data?.find((m: any) => m.sourceUrl === url) || null
-}
-
-// Custom hooks
-function useLocalStorage<T>(key: string, initialValue: T) {
-  const [value, setValue] = useState<T>(initialValue)
-
-  useEffect(() => {
-    const saved = localStorage.getItem(key)
-    if (saved) {
-      try {
-        setValue(JSON.parse(saved))
-      } catch {
-        localStorage.removeItem(key)
-      }
-    }
-  }, [])
-
-  const setStoredValue = useCallback((newValue: T) => {
-    setValue(newValue)
-    if (newValue === null || newValue === undefined) {
-      localStorage.removeItem(key)
-    } else {
-      localStorage.setItem(key, JSON.stringify(newValue))
-    }
-  }, [key])
-
-  return [value, setStoredValue] as const
 }
 
 const useUrlValidation = (url: string) => {
