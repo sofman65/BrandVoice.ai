@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import {
   Loader2, Sparkles, Rocket, Zap, Globe, Video, Check, Bookmark, X,
 } from "lucide-react"
-import { VoicePicker } from "@/components/voice-picker"
+import { VoicePicker } from "@/features/voices/components/voice-picker"
 import { ContentSelectorModal } from "@/components/content-selector-modal"
 import { 
   validateUrl, 
@@ -24,7 +24,7 @@ import {
 import { useLocalStorage } from "@/hooks/use-local-storage"
 import { InstagramPreview } from "@/components/instagram-preview"
 import { YouTubePreview } from "@/components/youtube-preview"
-import { ContentResults } from "@/components/content-results"
+import { ContentResults } from "@/features/missions/components/content-results"
 import type { GeneratedContent } from "@/lib/types"
 import { MultiStepLoader } from "@/components/ui/multi-step-loader"
 import { LOADING_STATES, FEATURES } from "@/lib/constants"

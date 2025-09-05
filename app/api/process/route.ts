@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { auth, currentUser } from "@clerk/nextjs/server"
 // import { fetchInstagram } from "@/lib/instagram"
 import { fetchYouTubeData } from "@/lib/youtube"
-import { generateContent, transcribeAudio, generateContentWithVoice } from "@/lib/openai"
+import { generateContent, generateContentWithVoice } from "@/lib/openai"
 import { checkRateLimit } from "@/lib/rate-limit"
 import { userMessageFromError, newRequestId } from "@/lib/errors"
 import { isValidInstagramUrl, isValidYouTubeUrl } from "@/lib/utils"
@@ -126,26 +126,8 @@ export async function POST(request: NextRequest) {
           username: instagramData.username,
         })
 
-        // Transcribe audio if it's a video with media URL
-        if (instagramData.media_type === "video" && instagramData.media_url) {
-          try {
-            console.log("Starting video transcription...")
-            transcript = await transcribeAudio(instagramData.media_url)
-            console.log("Transcription completed, length:", transcript.length)
-          } catch (transcribeError) {
-            console.error("Error transcribing audio:", transcribeError)
-
-            // Don't fail the entire request if transcription fails
-            // Log the error and continue with just the caption
-            if (typeof transcribeError === 'object' &&
-              transcribeError !== null &&
-              'message' in transcribeError) {
-              console.warn("Transcription error:", (transcribeError as Error).message)
-            }
-
-            transcript = undefined
-          }
-        }
+        // Transcription disabled for now; continue with caption-only for Instagram
+        transcript = undefined
 
         sourceData = {
           content: instagramData.caption,
@@ -222,10 +204,6 @@ export async function POST(request: NextRequest) {
         caption: sourceData.content,
         transcript,
         voice: brandVoice as any,
-        referenceItems,
-        pastMissions: body.pastMissions,
-        presetNote: body.presetNote,
-        targetNotes: body.targetNotes,
         autoImage: typeof body.autoImage === "boolean" ? body.autoImage : (process.env.AUTO_IMAGE_GEN === "true"),
       })
       console.log("✅ Content generation completed:", generatedContent)
@@ -249,42 +227,42 @@ export async function POST(request: NextRequest) {
         const outcomesToSave = [
           {
             id: crypto.randomUUID(),
-            missionId: body.missionId,
-            type: 'linkedin_post',
+            missionId: String(body.missionId),
+            type: 'linkedin_post' as const,
             title: 'LinkedIn Post',
             content: generatedContent.linkedin,
             metadata: null,
-            status: 'draft',
+            status: 'draft' as const,
           },
           {
             id: crypto.randomUUID(),
-            missionId: body.missionId,
-            type: 'threads',
+            missionId: String(body.missionId),
+            type: 'threads' as const,
             title: 'Threads Post',
             content: generatedContent.threads,
             metadata: null,
-            status: 'draft',
+            status: 'draft' as const,
           },
           {
             id: crypto.randomUUID(),
-            missionId: body.missionId,
-            type: 'instagram_carousel',
+            missionId: String(body.missionId),
+            type: 'instagram_carousel' as const,
             title: 'Instagram Carousel',
             content: JSON.stringify(generatedContent.carousel),
             metadata: { 
               slideCount: generatedContent.carousel?.length || 0,
               slides: generatedContent.carousel 
             },
-            status: 'draft',
+            status: 'draft' as const,
           },
           {
             id: crypto.randomUUID(),
-            missionId: body.missionId,
-            type: 'video_script',
+            missionId: String(body.missionId),
+            type: 'video_script' as const,
             title: 'Video Script',
             content: generatedContent.video_script,
             metadata: null,
-            status: 'draft',
+            status: 'draft' as const,
           }
         ]
 

@@ -6,7 +6,7 @@ import { useRouter, usePathname, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
-import { brandVoiceClerkAppearance } from "@/components/clerk-appearance";
+import { brandVoiceClerkAppearance } from "@/shared/components/clerk-appearance";
 import { toast } from "sonner";
 import {
   ChevronLeft, ChevronRight, Plus, Search, Pin, Pencil, Trash2,

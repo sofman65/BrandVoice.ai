@@ -1,14 +1,14 @@
-import { QueryProvider } from "@/components/query-provider";
-import { ThemeProvider } from "@/components/theme-provider";
+import { QueryProvider } from "@/shared/components/query-provider";
+import { ThemeProvider } from "@/shared/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import type React from "react";
 import "./globals.css";
-import { MissionSidebar } from "@/components/mission-sidebar";
-import { MissionShell } from "@/components/mission-shell";
-import { OnboardingWrapper } from "@/components/onboarding-wrapper";
+import { MissionSidebar } from "@/shared/components/mission-sidebar";
+import { MissionShell } from "@/shared/components/mission-shell";
+import { OnboardingWrapper } from "@/shared/components/onboarding-wrapper";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 
 const inter = Inter({ subsets: ["latin"] });

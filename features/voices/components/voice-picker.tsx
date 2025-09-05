@@ -8,9 +8,9 @@ import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
 } from "@/components/ui/command"
 import { ChevronDown, Wand2, Check, Plus, User } from "lucide-react"
-import { Button } from "./ui/button"
-import { useVoiceProfiles } from "@/hooks/use-voice-profiles"
-import { CreateVoiceDialog } from "./create-voice-dialog"
+import { Button } from "@/components/ui/button"
+import { useVoiceProfiles } from "@/features/voices/api/use-voice-profiles"
+import { CreateVoiceDialog } from "@/features/voices/components/create-voice-dialog"
 import { VoiceProfile } from "@/lib/types"
 
 interface VoiceOption {

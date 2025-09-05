@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea"
 import { CopyButton } from "@/components/copy-button"
 import { Badge } from "@/components/ui/badge"
-import { VoiceAlertBanner } from "@/components/voice-alert-banner"
+import { VoiceAlertBanner } from "@/features/voices/components/voice-alert-banner"
 import { Linkedin, Instagram, MessageCircle, Video, Sparkles, ImageIcon } from "lucide-react"
 import type { GeneratedContent, CarouselSlide } from "@/lib/types"
 import { useState } from "react"

@@ -1,6 +1,6 @@
 import { UserProfile } from '@clerk/nextjs';
-import { AuthWrapper } from "@/components/auth-wrapper";
-import { brandVoiceClerkAppearance } from "@/components/clerk-appearance";
+import { AuthWrapper } from "@/shared/components/auth-wrapper";
+import { brandVoiceClerkAppearance } from "@/shared/components/clerk-appearance";
 
 export default function UserProfilePage() {
   return (

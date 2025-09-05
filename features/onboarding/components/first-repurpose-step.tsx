@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { ContentResults } from "@/components/content-results"
+import { ContentResults } from "@/features/missions/components/content-results"
 import { MultiStepLoader } from "@/components/ui/multi-step-loader"
 import { LOADING_STATES } from "@/lib/constants"
 import { isValidYouTubeUrl, isValidInstagramUrl } from "@/lib/utils"
