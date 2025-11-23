@@ -17,7 +17,7 @@ export function AppTopbar({ sidebar }: Props) {
   }, [open]);
 
   return (
-    <div className="md:hidden flex items-center justify-between border-b border-white/10 px-4 py-3">
+    <div className="md:hidden flex items-center justify-between border-b border-white/10 px-4 py-3 backdrop-blur-xl bg-white/5">
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
           <Button variant="ghost" className="text-white">

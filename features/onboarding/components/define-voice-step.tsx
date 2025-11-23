@@ -2,246 +2,192 @@
 
 import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
+import { Label } from "@/components/ui/label"
 import { TONE_OPTIONS } from "@/lib/constants"
-import { Loader2, Sparkles, Plus, X } from "lucide-react"
+import { Plus, X, Loader2, Sparkles } from "lucide-react"
 import { toast } from "sonner"
+import { motion } from "framer-motion"
 
 interface DefineVoiceStepProps {
   onComplete: (data: { voiceProfileId: string }) => void
   onSkip: () => void
-  existingVoiceId?: string | null
 }
 
-export function DefineVoiceStep({ onComplete, onSkip, existingVoiceId }: DefineVoiceStepProps) {
-  const [selectedTone, setSelectedTone] = useState<string>("friendly")
-  const [audience, setAudience] = useState<string>("")
+export function DefineVoiceStep({ onComplete, onSkip }: DefineVoiceStepProps) {
+  const [tone, setTone] = useState("friendly")
+  const [audience, setAudience] = useState("")
   const [keywords, setKeywords] = useState<string[]>([])
-  const [keywordInput, setKeywordInput] = useState<string>("")
-  const [customTone, setCustomTone] = useState<string>("")
-  const [isLoading, setIsLoading] = useState(false)
+  const [customTone, setCustomTone] = useState("")
+  const [keywordInput, setKeywordInput] = useState("")
+  const [loading, setLoading] = useState(false)
 
-  const handleAddKeyword = () => {
+  const addKeyword = () => {
     if (keywordInput.trim() && keywords.length < 8) {
-      setKeywords([...keywords, keywordInput.trim()])
+      setKeywords((prev) => [...prev, keywordInput.trim()])
       setKeywordInput("")
     }
   }
 
-  const handleRemoveKeyword = (index: number) => {
-    setKeywords(keywords.filter((_, i) => i !== index))
+  const removeKeyword = (i: number) => {
+    setKeywords((prev) => prev.filter((_, idx) => idx !== i))
   }
 
-  const handleKeywordInputKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === ",") {
-      e.preventDefault()
-      handleAddKeyword()
-    }
-  }
+  const saveVoice = async () => {
+    if (!audience.trim()) return toast.error("Please describe your audience")
 
-  const handleSaveVoice = async () => {
-    if (!audience.trim()) {
-      toast.error("Please describe your audience")
-      return
+    if (tone === "custom" && !customTone.trim()) {
+      return toast.error("Please describe your custom tone")
     }
 
-    if (selectedTone === "custom" && !customTone.trim()) {
-      toast.error("Please describe your custom tone")
-      return
-    }
-
-    setIsLoading(true)
+    setLoading(true)
 
     try {
-      const response = await fetch("/api/voice-profiles", {
+      const res = await fetch("/api/voice-profiles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: "Default",
-          tone: selectedTone === "custom" ? customTone : selectedTone,
-          audience: audience.trim(),
-          keywords: keywords, // Send as array
-        }),
         credentials: "include",
+        body: JSON.stringify({
+          name: "Default Voice",
+          tone: tone === "custom" ? customTone : tone,
+          audience,
+          keywords
+        })
       })
 
-      if (!response.ok) {
-        throw new Error("Failed to save voice profile")
-      }
-
-      const data = await response.json()
-      toast.success("Voice profile saved! 🎉")
+      const data = await res.json()
       onComplete({ voiceProfileId: data.voiceProfile.id })
-    } catch (error) {
-      console.error("Error saving voice profile:", error)
-      toast.error("Failed to save voice profile")
+      toast.success("Voice saved!")
+    } catch {
+      toast.error("Failed to save voice")
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
+
       {/* Header */}
-      <div className="text-center space-y-4">
-        <h2 className="text-3xl font-bold text-white">Make it sound like you</h2>
-        <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-          Set your brand voice so your repurposed content sounds authentic. You can update this anytime.
+      <div className="text-center space-y-3">
+        <h2 className="text-4xl font-bold text-white">Define your brand voice</h2>
+        <p className="text-lg text-white/60 max-w-xl mx-auto">
+          Choose your tone, audience and key themes. You can refine this anytime.
         </p>
       </div>
 
-      <div className="max-w-2xl mx-auto space-y-8">
-        {/* Tone Selection */}
-        <div className="space-y-4">
-          <Label className="text-lg font-semibold text-white">Choose your tone</Label>
-          <div className="grid sm:grid-cols-2 gap-3">
-            {TONE_OPTIONS.map((tone) => (
-              <Card
-                key={tone.id}
-                className={`cursor-pointer transition-all duration-200 ${
-                  selectedTone === tone.id
-                    ? "ring-2 ring-purple-400 bg-purple-500/20 border-purple-400/50"
-                    : "bg-white/5 border-white/10 hover:bg-white/10"
-                }`}
-                onClick={() => setSelectedTone(tone.id)}
-              >
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-white text-lg">{tone.label}</CardTitle>
-                  <CardDescription className="text-gray-300 text-sm">
-                    {tone.description}
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            ))}
+      <div className="space-y-10 max-w-2xl mx-auto">
+
+        {/* Tone */}
+        <div className="space-y-3">
+          <Label className="text-white text-lg">Tone</Label>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {TONE_OPTIONS.map((t) => {
+              const isSelected = tone === t.id
+
+              return (
+                <motion.div
+                  key={t.id}
+                  whileHover={{ scale: 1.02 }}
+                  className="cursor-pointer"
+                  onClick={() => setTone(t.id)}
+                >
+                  <Card className={`rounded-xl transition-all border 
+                    ${isSelected ? "border-primary/50 bg-primary/10" : "border-white/10 bg-white/5"}
+                  `}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-white">{t.label}</CardTitle>
+                      <CardDescription className="text-white/60">{t.description}</CardDescription>
+                    </CardHeader>
+                  </Card>
+                </motion.div>
+              )
+            })}
           </div>
 
-          {/* Custom Tone Input */}
-          {selectedTone === "custom" && (
-            <div className="space-y-2">
-              <Label htmlFor="custom-tone" className="text-white">
-                Describe your custom tone
-              </Label>
-              <Textarea
-                id="custom-tone"
-                placeholder="e.g., Witty but informative, like a knowledgeable friend explaining complex topics..."
-                value={customTone}
-                onChange={(e) => setCustomTone(e.target.value)}
-                className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-400"
-                rows={3}
-              />
-            </div>
+          {tone === "custom" && (
+            <Textarea
+              className="bg-white/10 border-white/20 text-white"
+              placeholder="Describe your custom tone..."
+              value={customTone}
+              onChange={(e) => setCustomTone(e.target.value)}
+            />
           )}
         </div>
 
         {/* Audience */}
         <div className="space-y-2">
-          <Label htmlFor="audience" className="text-lg font-semibold text-white">
-            Who's your audience?
-          </Label>
+          <Label className="text-white text-lg">Audience</Label>
           <Input
-            id="audience"
-            placeholder="e.g., Tech founders, solo creators, marketing professionals..."
+            className="bg-white/10 border-white/20 text-white"
+            placeholder="e.g., tech founders, solo creators, marketers"
             value={audience}
             onChange={(e) => setAudience(e.target.value)}
-            className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-400"
           />
-          <p className="text-gray-400 text-sm">
-            This helps us tailor the content to resonate with your specific audience
-          </p>
         </div>
 
         {/* Keywords */}
-        <div className="space-y-4">
-          <Label className="text-lg font-semibold text-white">
-            Keywords to emphasize (optional)
-          </Label>
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <Input
-                placeholder="e.g., AI, productivity, growth..."
-                value={keywordInput}
-                onChange={(e) => setKeywordInput(e.target.value)}
-                onKeyDown={handleKeywordInputKeyPress}
-                className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-400"
-                disabled={keywords.length >= 8}
-              />
-              <Button
-                onClick={handleAddKeyword}
-                disabled={!keywordInput.trim() || keywords.length >= 8}
-                variant="outline"
-                className="border-white/20 text-white hover:bg-white/10"
+        <div className="space-y-2">
+          <Label className="text-white text-lg">Keywords (optional)</Label>
+
+          <div className="flex gap-2">
+            <Input
+              className="bg-white/10 border-white/20 text-white"
+              placeholder="Add a keyword..."
+              value={keywordInput}
+              onChange={(e) => setKeywordInput(e.target.value)}
+              onKeyDown={(e) =>
+                (e.key === "Enter" || e.key === ",") && (e.preventDefault(), addKeyword())
+              }
+            />
+            <Button
+              variant="outline"
+              onClick={addKeyword}
+              disabled={!keywordInput.trim()}
+              className="border-white/20 text-white"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* keyword chips */}
+          <div className="flex flex-wrap gap-2">
+            {keywords.map((k, i) => (
+              <span
+                key={i}
+                className="px-3 py-1 bg-primary/20 text-primary-200 border border-primary/30 rounded-full text-sm flex items-center gap-1"
               >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            {keywords.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {keywords.map((keyword, index) => (
-                  <Badge
-                    key={index}
-                    variant="secondary"
-                    className="bg-purple-500/20 text-purple-300 border-purple-500/30 pr-1"
-                  >
-                    {keyword}
-                    <Button
-                      onClick={() => handleRemoveKeyword(index)}
-                      variant="ghost"
-                      size="sm"
-                      className="ml-1 h-auto p-0.5 hover:bg-purple-500/30"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </Badge>
-                ))}
-              </div>
-            )}
-            
-            <p className="text-gray-400 text-sm">
-              Add up to 8 keywords that are important to your brand or industry
-            </p>
+                {k}
+                <button onClick={() => removeKeyword(i)}>
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+        {/* Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button
-            onClick={handleSaveVoice}
-            disabled={isLoading || !audience.trim() || (selectedTone === "custom" && !customTone.trim())}
             size="lg"
-            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold px-8 py-3 text-lg"
+            disabled={loading}
+            onClick={saveVoice}
+            className="bg-primary text-white px-8 py-3 rounded-xl"
           >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Saving Your Voice...
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-2 h-5 w-5" />
-                Save My Voice
-              </>
-            )}
+            {loading ? <Loader2 className="animate-spin h-5 w-5 mr-2" /> : <Sparkles className="h-5 w-5 mr-2" />}
+            Save My Voice
           </Button>
-          
-          <Button
-            onClick={onSkip}
-            variant="ghost"
-            size="lg"
-            className="text-gray-400 hover:text-white hover:bg-white/10 px-8 py-3 text-lg"
-          >
-            Skip for Now
-          </Button>
-        </div>
 
-        <div className="text-center">
-          <p className="text-gray-400 text-sm">
-            You can always update your voice settings later from your profile
-          </p>
+          <Button
+            size="lg"
+            variant="ghost"
+            onClick={onSkip}
+            className="text-white/60 hover:bg-white/10"
+          >
+            Skip for now
+          </Button>
         </div>
       </div>
     </div>

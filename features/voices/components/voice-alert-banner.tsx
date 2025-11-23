@@ -7,68 +7,57 @@ import { Sparkles, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 export function VoiceAlertBanner() {
-  const [showAlert, setShowAlert] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [show, setShow] = useState(false)
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
-    const checkVoiceProfile = async () => {
-      try {
-        const response = await fetch("/api/voice-profiles", {
-          credentials: "include",
-        })
+    const dismissed = sessionStorage.getItem("voice-alert-dismissed")
+    if (dismissed) return
 
-        if (response.ok) {
-          const data = await response.json()
-          // Show alert if user has no voice profiles
-          setShowAlert(!data.profiles || data.profiles.length === 0)
+    const checkVoices = async () => {
+      try {
+        const res = await fetch("/api/voice-profiles", { credentials: "include" })
+        if (res.ok) {
+          const data = await res.json()
+          setShow(!data.profiles || data.profiles.length === 0)
         }
-      } catch (error) {
-        console.error("Failed to check voice profiles:", error)
       } finally {
-        setIsLoading(false)
+        setLoading(false)
       }
     }
 
-    checkVoiceProfile()
+    checkVoices()
   }, [])
 
-  const handleSetVoice = () => {
-    router.push("/onboarding?step=2") // Go directly to voice setup
-  }
-
-  const handleDismiss = () => {
-    setShowAlert(false)
-    // Remember dismissal for this session
-    sessionStorage.setItem("voice-alert-dismissed", "true")
-  }
-
-  // Don't show if loading, dismissed this session, or user has voice profiles
-  if (isLoading || !showAlert || sessionStorage.getItem("voice-alert-dismissed")) {
-    return null
-  }
+  if (loading || !show) return null
 
   return (
-    <Alert className="mb-6 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/20">
-      <Sparkles className="h-4 w-4 text-purple-400" />
+    <Alert className="mb-6 bg-black/20 border border-white/10 backdrop-blur-lg">
+      <Sparkles className="h-4 w-4 text-white/70" />
       <div className="flex items-center justify-between w-full">
-        <AlertDescription className="text-purple-200 flex-1">
-          <strong>Make your content sound authentic!</strong> This content was generated with our default AI voice. 
-          <span className="ml-1">Define your own voice to make it truly yours.</span>
+        <AlertDescription className="text-white/70 flex-1">
+          <span className="font-medium text-white">Using default AI voice.</span>{" "}
+          Create your own voice profile for authentic, consistent content.
         </AlertDescription>
+
         <div className="flex items-center gap-2 ml-4">
           <Button
-            onClick={handleSetVoice}
             size="sm"
-            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+            className="bg-white/10 border border-white/10 text-white hover:bg-white/20"
+            onClick={() => router.push("/onboarding?step=2")}
           >
-            Set My Voice Now
+            Set My Voice
           </Button>
+
           <Button
-            onClick={handleDismiss}
-            variant="ghost"
             size="sm"
-            className="text-gray-400 hover:text-white"
+            variant="ghost"
+            className="text-white/40 hover:text-white"
+            onClick={() => {
+              sessionStorage.setItem("voice-alert-dismissed", "true")
+              setShow(false)
+            }}
           >
             <X className="h-4 w-4" />
           </Button>

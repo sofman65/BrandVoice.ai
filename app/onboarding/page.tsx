@@ -121,7 +121,6 @@ export default function OnboardingPage() {
           <DefineVoiceStep
             onComplete={handleStepComplete}
             onSkip={handleSkipStep}
-            existingVoiceId={progress.voiceProfileId}
           />
         )
       case ONBOARDING_STEPS.FIRST_REPURPOSE:

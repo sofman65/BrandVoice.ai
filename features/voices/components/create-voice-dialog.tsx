@@ -23,22 +23,17 @@ import { Textarea } from "@/components/ui/textarea"
 import { useCreateVoiceProfile } from "@/features/voices/api/use-voice-profiles"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
-
-interface CreateVoiceDialogProps {
-  isOpen: boolean
-  onClose: () => void
-  onSuccess?: (voiceProfile: any) => void
-}
+import { VoiceProfile } from "@/lib/types"
 
 const TONE_OPTIONS = [
-  { value: 'professional', label: 'Professional' },
-  { value: 'friendly', label: 'Friendly' },
-  { value: 'playful', label: 'Playful' },
-  { value: 'bold', label: 'Bold' },
-  { value: 'custom', label: 'Custom' },
+  { value: "professional", label: "Professional" },
+  { value: "friendly", label: "Friendly" },
+  { value: "playful", label: "Playful" },
+  { value: "bold", label: "Bold" },
+  { value: "custom", label: "Custom" },
 ]
 
-export function CreateVoiceDialog({ isOpen, onClose, onSuccess }: CreateVoiceDialogProps) {
+export function CreateVoiceDialog({ isOpen, onClose, onSuccess }: { isOpen: boolean, onClose: () => void, onSuccess: (voiceProfile: VoiceProfile) => void }) {
   const [name, setName] = useState("")
   const [tone, setTone] = useState("")
   const [customTone, setCustomTone] = useState("")
@@ -49,7 +44,7 @@ export function CreateVoiceDialog({ isOpen, onClose, onSuccess }: CreateVoiceDia
 
   const createVoiceProfile = useCreateVoiceProfile()
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     if (!tone || !audience) {
@@ -57,22 +52,24 @@ export function CreateVoiceDialog({ isOpen, onClose, onSuccess }: CreateVoiceDia
       return
     }
 
-    const finalTone = tone === 'custom' ? customTone : tone
+    const finalTone = tone === "custom" ? customTone : tone
 
     try {
       const result = await createVoiceProfile.mutateAsync({
         name: name || "My Voice",
         tone: finalTone,
         audience,
-        keywords: keywords ? keywords.split(',').map(k => k.trim()).filter(Boolean) : undefined,
+        keywords: keywords
+          ? keywords.split(",").map((k) => k.trim()).filter(Boolean)
+          : undefined,
         style: style || undefined,
         cta: cta || undefined,
       })
 
-      toast.success("Voice profile created successfully!")
+      toast.success("Voice profile created")
       onSuccess?.(result.voiceProfile)
       handleClose()
-    } catch (error) {
+    } catch {
       toast.error("Failed to create voice profile")
     }
   }
@@ -90,96 +87,99 @@ export function CreateVoiceDialog({ isOpen, onClose, onSuccess }: CreateVoiceDia
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px] bg-[#0b0b15] border-white/10 text-white">
+      <DialogContent className="sm:max-w-[500px] bg-black/30 backdrop-blur-xl border border-white/10 text-white">
         <DialogHeader>
-          <DialogTitle>Create Your Voice</DialogTitle>
-          <DialogDescription className="text-gray-400">
-            Define how you want your content to sound. This will be used for all future generations.
+          <DialogTitle className="text-white font-semibold">
+            Create Voice Profile
+          </DialogTitle>
+          <DialogDescription className="text-white/60">
+            Define how your brand speaks across all generated content.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
+
+          {/* Name */}
           <div className="space-y-2">
-            <Label htmlFor="name">Voice Name</Label>
+            <Label className="text-white/80">Voice Name</Label>
             <Input
-              id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="My Professional Voice"
-              className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+              placeholder="e.g., Founder Voice"
+              className="bg-black/20 border-white/10 text-white"
             />
           </div>
 
+          {/* Tone */}
           <div className="space-y-2">
-            <Label htmlFor="tone">Tone *</Label>
+            <Label className="text-white/80">Tone *</Label>
             <Select value={tone} onValueChange={setTone}>
-              <SelectTrigger className="bg-white/10 border-white/20 text-white">
-                <SelectValue placeholder="Choose your tone" />
+              <SelectTrigger className="bg-black/20 border-white/10 text-white">
+                <SelectValue placeholder="Choose tone" />
               </SelectTrigger>
-              <SelectContent className="bg-[#0b0b15] border-white/10 text-white">
-                {TONE_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+              <SelectContent className="bg-black/30 border-white/10 text-white backdrop-blur-lg">
+                {TONE_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {tone === 'custom' && (
+          {tone === "custom" && (
             <div className="space-y-2">
-              <Label htmlFor="customTone">Custom Tone *</Label>
+              <Label className="text-white/80">Custom Tone *</Label>
               <Input
-                id="customTone"
                 value={customTone}
                 onChange={(e) => setCustomTone(e.target.value)}
-                placeholder="Describe your custom tone"
-                className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                placeholder="Describe the tone"
+                className="bg-black/20 border-white/10 text-white"
               />
             </div>
           )}
 
+          {/* Audience */}
           <div className="space-y-2">
-            <Label htmlFor="audience">Target Audience *</Label>
+            <Label className="text-white/80">Target Audience *</Label>
             <Input
-              id="audience"
               value={audience}
               onChange={(e) => setAudience(e.target.value)}
-              placeholder="e.g., Tech entrepreneurs, Content creators"
-              className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+              placeholder="e.g., tech founders, creators, consultants"
+              className="bg-black/20 border-white/10 text-white"
             />
           </div>
 
+          {/* Keywords */}
           <div className="space-y-2">
-            <Label htmlFor="keywords">Keywords to Emphasize</Label>
+            <Label className="text-white/80">Key Vocabulary</Label>
             <Input
-              id="keywords"
               value={keywords}
               onChange={(e) => setKeywords(e.target.value)}
-              placeholder="innovation, growth, productivity (comma-separated)"
-              className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+              placeholder="comma-separated keywords"
+              className="bg-black/20 border-white/10 text-white"
             />
           </div>
 
+          {/* Style */}
           <div className="space-y-2">
-            <Label htmlFor="style">Writing Style</Label>
+            <Label className="text-white/80">Writing Style</Label>
             <Textarea
-              id="style"
               value={style}
               onChange={(e) => setStyle(e.target.value)}
-              placeholder="Describe your preferred writing style..."
-              className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 min-h-[80px]"
+              placeholder="Short, punchy, story-driven..."
+              className="bg-black/20 border-white/10 text-white min-h-[80px]"
             />
           </div>
 
+          {/* CTA */}
           <div className="space-y-2">
-            <Label htmlFor="cta">Call-to-Action Style</Label>
+            <Label className="text-white/80">CTA Style</Label>
             <Input
-              id="cta"
               value={cta}
               onChange={(e) => setCta(e.target.value)}
-              placeholder="e.g., Ask engaging questions, invite discussion"
-              className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+              placeholder="Invite conversation, avoid salesy tone..."
+              className="bg-black/20 border-white/10 text-white"
             />
           </div>
 
@@ -188,14 +188,15 @@ export function CreateVoiceDialog({ isOpen, onClose, onSuccess }: CreateVoiceDia
               type="button"
               variant="ghost"
               onClick={handleClose}
-              className="text-gray-400 hover:text-white"
+              className="text-white/60 hover:text-white"
             >
               Cancel
             </Button>
+
             <Button
               type="submit"
               disabled={createVoiceProfile.isPending}
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-white/10 border border-white/10 hover:bg-white/20 text-white"
             >
               {createVoiceProfile.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

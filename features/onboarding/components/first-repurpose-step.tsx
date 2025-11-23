@@ -1,254 +1,224 @@
-"use client"
+"use client";
 
-import React, { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { ContentResults } from "@/features/missions/components/content-results"
-import { MultiStepLoader } from "@/components/ui/multi-step-loader"
-import { LOADING_STATES } from "@/lib/constants"
-import { isValidYouTubeUrl, isValidInstagramUrl } from "@/lib/utils"
-import { Rocket, Upload, Sparkles, AlertCircle } from "lucide-react"
-import { toast } from "sonner"
-import type { GeneratedContent } from "@/lib/types"
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+import { ContentResults } from "@/features/missions/components/content-results";
+import { MultiStepLoader } from "@/components/ui/multi-step-loader";
+
+import { LOADING_STATES } from "@/lib/constants";
+import { isValidYouTubeUrl, isValidInstagramUrl } from "@/lib/utils";
+
+import { Rocket, Upload, Sparkles, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
+import type { GeneratedContent } from "@/lib/types";
 
 interface FirstRepurposeStepProps {
-  onComplete: (data: any) => void
-  platform?: string | null
-  voiceProfileId?: string | null
+  onComplete: (data: any) => void;
+  platform?: string | null;
+  voiceProfileId?: string | null;
 }
 
-export function FirstRepurposeStep({ onComplete, platform, voiceProfileId }: FirstRepurposeStepProps) {
-  const [url, setUrl] = useState<string>("")
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null)
-  const [showVoiceAlert, setShowVoiceAlert] = useState(!voiceProfileId)
+export function FirstRepurposeStep({
+  onComplete,
+  platform,
+  voiceProfileId,
+}: FirstRepurposeStepProps) {
+  const [url, setUrl] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
 
+  const [showVoiceAlert, setShowVoiceAlert] = useState(!voiceProfileId);
+
+  /** -------- Validation -------- */
   const validateInput = () => {
     if (!url.trim()) {
-      toast.error("Please enter a URL or upload a file")
-      return false
+      toast.error("Please enter a URL");
+      return false;
     }
-
     if (platform === "youtube" && !isValidYouTubeUrl(url)) {
-      toast.error("Please enter a valid YouTube URL")
-      return false
+      toast.error("Invalid YouTube URL");
+      return false;
     }
-
     if (platform === "instagram" && !isValidInstagramUrl(url)) {
-      toast.error("Please enter a valid Instagram URL") 
-      return false
+      toast.error("Invalid Instagram URL");
+      return false;
     }
+    return true;
+  };
 
-    return true
-  }
-
+  /** -------- Generate Content -------- */
   const handleGenerate = async () => {
-    if (!validateInput()) return
+    if (!validateInput()) return;
 
-    setIsGenerating(true)
+    setIsGenerating(true);
 
     try {
-      // First create a mission
+      // Create mission
       const missionResponse = await fetch("/api/missions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
-          title: `First Mission: ${url.substring(0, 50)}...`,
-          platform: platform === "youtube" ? "youtube" : "instagram",
+          title: `First Mission: ${url.slice(0, 50)}...`,
+          platform,
           sourceUrl: url,
           description: "Your first repurposed content!",
         }),
-        credentials: "include",
-      })
+      });
 
-      if (!missionResponse.ok) {
-        throw new Error("Failed to create mission")
-      }
+      if (!missionResponse.ok) throw new Error("Failed to create mission");
 
-      const missionData = await missionResponse.json()
-      const missionId = missionData.data.id
+      const missionData = await missionResponse.json();
+      const missionId = missionData.data.id;
+      localStorage.setItem("currentMissionId", missionId);
 
-      // Store mission ID for process API
-      localStorage.setItem("currentMissionId", missionId)
-
-      // Generate content
+      // Process content
       const processResponse = await fetch("/api/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url,
-          missionId, // This will save outcomes automatically
-          voiceProfileId, // Use the onboarding voice profile
-        }),
         credentials: "include",
-      })
+        body: JSON.stringify({
+          missionId,
+          url,
+          voiceProfileId,
+        }),
+      });
 
-      if (!processResponse.ok) {
-        throw new Error("Failed to generate content")
-      }
+      if (!processResponse.ok) throw new Error("Failed to process content");
 
-      const processData = await processResponse.json()
-      
-      if (!processData.success) {
-        throw new Error(processData.error || "Content generation failed")
-      }
+      const processData = await processResponse.json();
+      if (!processData.success) throw new Error(processData.error);
 
-      setGeneratedContent(processData.data)
-      toast.success("Content generated successfully! 🎉")
-      
-      // Clean up
-      localStorage.removeItem("currentMissionId")
-      
-    } catch (error) {
-      console.error("Error generating content:", error)
-      toast.error("Failed to generate content. Please try again.")
+      setGeneratedContent(processData.data);
+      toast.success("Your content is ready! 🎉");
+
+      localStorage.removeItem("currentMissionId");
+    } catch (err) {
+      console.error(err);
+      toast.error("Generation failed. Try again.");
     } finally {
-      setIsGenerating(false)
+      setIsGenerating(false);
     }
-  }
+  };
 
   const handleComplete = () => {
     onComplete({
       generatedContent,
       firstMissionCompleted: true,
-    })
-  }
+    });
+  };
+
+  /** -------- Placeholder Texts -------- */
+  const getInputLabel = () => {
+    switch (platform) {
+      case "youtube":
+        return "YouTube URL";
+      case "instagram":
+        return "Instagram URL";
+      default:
+        return "Content URL";
+    }
+  };
 
   const getInputPlaceholder = () => {
     switch (platform) {
       case "youtube":
-        return "https://www.youtube.com/watch?v=..."
+        return "https://youtube.com/watch?v=...";
       case "instagram":
-        return "https://www.instagram.com/p/..."
-      case "upload":
-        return "Upload your video file..."
+        return "https://instagram.com/p/...";
       default:
-        return "Enter your content URL..."
+        return "Paste your video link here";
     }
-  }
-
-  const getInputLabel = () => {
-    switch (platform) {
-      case "youtube":
-        return "YouTube URL"
-      case "instagram":
-        return "Instagram URL"
-      case "upload":
-        return "Upload File"
-      default:
-        return "Content URL"
-    }
-  }
+  };
 
   return (
-    <div className="space-y-8">
-      <MultiStepLoader
-        loadingStates={LOADING_STATES}
-        loading={isGenerating}
-        duration={1200}
-      />
+    <div className="space-y-10">
+      <MultiStepLoader loadingStates={LOADING_STATES} loading={isGenerating} duration={1200} />
 
       {/* Header */}
-      <div className="text-center space-y-4">
-        <h2 className="text-3xl font-bold text-white">Let's try your first transformation</h2>
-        <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-          {platform === "upload" 
-            ? "Upload a video file and watch the magic happen."
-            : "Paste a link and watch the magic happen."
-          }
+      <div className="space-y-4 text-center">
+        <h2 className="text-4xl font-bold text-white tracking-tight">
+          Transform your first content
+        </h2>
+        <p className="text-lg text-white/60 max-w-2xl mx-auto">
+          Paste a link and BrandVoice will turn it into multi-platform magic.
         </p>
       </div>
 
-      {/* Voice Alert */}
+      {/* Voice Warning */}
       {showVoiceAlert && (
-        <Alert className="max-w-2xl mx-auto bg-amber-500/10 border-amber-500/20">
-          <AlertCircle className="h-4 w-4 text-amber-500" />
+        <Alert className="mx-auto max-w-2xl bg-amber-500/10 border-amber-500/20">
+          <AlertCircle className="h-4 w-4 text-amber-400" />
           <AlertDescription className="text-amber-200">
-            This content will be generated in our default AI voice. 
-            <button 
+            This will be generated using our default AI voice.{" "}
+            <button
+              className="underline-offset-2 hover:underline"
               onClick={() => setShowVoiceAlert(false)}
-              className="ml-1 underline hover:no-underline"
             >
-              That's okay for now
+              Continue anyway
             </button>
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Input Section */}
       {!generatedContent && (
-        <Card className="max-w-2xl mx-auto bg-white/5 border-white/10">
+        <Card className="max-w-2xl mx-auto bg-white/5 border-white/10 backdrop-blur-sm rounded-2xl">
           <CardHeader>
-            <CardTitle className="text-white text-xl">
-              {platform === "upload" ? "Upload Your Content" : "Enter Your Content URL"}
-            </CardTitle>
-            <CardDescription className="text-gray-300">
-              {platform === "upload" 
-                ? "Select a video or audio file to transform into multi-platform content"
-                : "We'll automatically fetch the content and transform it into multiple formats"
-              }
+            <CardTitle className="text-white text-xl">{getInputLabel()}</CardTitle>
+            <CardDescription className="text-white/60">
+              We’ll fetch the content and generate every format for you.
             </CardDescription>
           </CardHeader>
+
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="content-input" className="text-white">
-                {getInputLabel()}
-              </Label>
-              {platform === "upload" ? (
-                <div className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center hover:border-white/30 transition-colors cursor-pointer">
-                  <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                  <p className="text-gray-300 mb-1">Click to upload or drag and drop</p>
-                  <p className="text-gray-500 text-sm">MP4, MP3, MOV up to 100MB</p>
-                </div>
-              ) : (
-                <Input
-                  id="content-input"
-                  type="url"
-                  placeholder={getInputPlaceholder()}
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-400"
-                  disabled={isGenerating}
-                />
-              )}
+              <Label className="text-white">{getInputLabel()}</Label>
+              <Input
+                type="url"
+                placeholder={getInputPlaceholder()}
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                disabled={isGenerating}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-purple-400"
+              />
             </div>
 
             <Button
-              onClick={handleGenerate}
-              disabled={isGenerating || !url.trim()}
               size="lg"
+              disabled={isGenerating || !url.trim()}
+              onClick={handleGenerate}
               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold"
             >
-              <Rocket className="mr-2 h-5 w-5" />
+              <Rocket className="h-5 w-5 mr-2" />
               Generate My First Content
             </Button>
           </CardContent>
         </Card>
       )}
 
-      {/* Results Section */}
+      {/* Results */}
       {generatedContent && (
-        <div className="space-y-6">
-          <div className="text-center">
-            <h3 className="text-2xl font-bold text-white mb-2 flex items-center justify-center gap-2">
-              <Sparkles className="h-6 w-6 text-yellow-400" />
+        <div className="space-y-10">
+          <div className="text-center space-y-3">
+            <h3 className="text-3xl font-semibold text-white flex items-center justify-center gap-2">
+              <Sparkles className="h-6 w-6 text-amber-300" />
               Your Content is Ready!
             </h3>
-            <p className="text-gray-300">
-              Here's your content transformed into multiple formats
-            </p>
+            <p className="text-white/60">Here’s everything BrandVoice created for you.</p>
           </div>
 
           <ContentResults data={generatedContent} />
 
           <div className="text-center">
             <Button
-              onClick={handleComplete}
               size="lg"
-              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold px-8 py-3 text-lg"
+              onClick={handleComplete}
+              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 px-10 py-3 text-lg text-white font-semibold"
             >
               Complete Onboarding
             </Button>
@@ -259,22 +229,22 @@ export function FirstRepurposeStep({ onComplete, platform, voiceProfileId }: Fir
       {/* Tips */}
       {!generatedContent && (
         <div className="max-w-2xl mx-auto">
-          <Card className="bg-purple-500/10 border-purple-500/20">
-            <CardContent className="p-6">
-              <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-purple-400" />
-                Pro Tips for Better Results
+          <Card className="bg-purple-500/10 border-purple-500/20 backdrop-blur-sm rounded-2xl">
+            <CardContent className="p-6 space-y-3">
+              <h4 className="text-white font-semibold flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-purple-300" />
+                Pro Tips for Best Results
               </h4>
-              <ul className="text-gray-300 space-y-2 text-sm">
-                <li>• Choose content with clear audio and good engagement</li>
-                <li>• Longer content (5+ minutes) gives more material to work with</li>
-                <li>• Educational or storytelling content works best</li>
-                <li>• Make sure the content aligns with your brand voice</li>
+              <ul className="text-white/60 space-y-2 text-sm">
+                <li>• Clear audio = better repurposing</li>
+                <li>• Longer content gives us more context</li>
+                <li>• Educational content works incredibly well</li>
+                <li>• Make sure it matches your brand voice</li>
               </ul>
             </CardContent>
           </Card>
         </div>
       )}
     </div>
-  )
+  );
 }

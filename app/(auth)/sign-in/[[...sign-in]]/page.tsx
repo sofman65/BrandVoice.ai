@@ -1,12 +1,22 @@
 "use client";
 
-import { SignInForm } from "@/components/auth/auth-forms";
-import { SharedAuthLayout } from "@/shared/components/auth/shared-auth-layout";
+import { SignIn } from "@clerk/nextjs";
+import { AuthWrapper } from "@/shared/components/auth-wrapper";
+import { brandVoiceClerkAppearance } from "@/shared/components/clerk-appearance";
 
 export default function Page() {
   return (
-    <SharedAuthLayout mode="sign-in">
-      <SignInForm />
-    </SharedAuthLayout>
+    <AuthWrapper
+      title="Welcome back"
+      subtitle="Sign in to your BrandVoice studio"
+    >
+      <SignIn
+        appearance={brandVoiceClerkAppearance}
+        path="/sign-in"
+        routing="path"
+        signUpUrl="/sign-up"
+        afterSignInUrl="/"
+      />
+    </AuthWrapper>
   );
 }

@@ -3,6 +3,8 @@
 import { SparklesCore } from "@/components/ui/sparkles";
 import Image from "next/image";
 import { ReactNode } from "react";
+import { motion } from "framer-motion";
+import { BrandSignature } from "@/shared/components/brand/brand-signature";
 
 interface SharedAuthLayoutProps {
   mode: "sign-in" | "sign-up";
@@ -12,7 +14,7 @@ interface SharedAuthLayoutProps {
 export function SharedAuthLayout({ mode, children }: SharedAuthLayoutProps) {
   const isSignIn = mode === "sign-in";
   return (
-    <div className="relative min-h-screen w-full bg-black text-white flex flex-col lg:flex-row overflow-hidden">
+    <div className="relative min-h-screen w-full bg-[#0F0F11] text-white flex flex-col lg:flex-row overflow-hidden">
       <style jsx global>{`
         @keyframes scroll-infinite {
           0% {
@@ -29,97 +31,142 @@ export function SharedAuthLayout({ mode, children }: SharedAuthLayoutProps) {
           animation-play-state: paused;
         }
       `}</style>
-      {/* Background vignette */}
-      <div className="absolute inset-0 bg-black/60 [mask-image:radial-gradient(900px_600px_at_25%_45%,transparent,black)]" />
-      {/* Left marketing panel (hidden below lg) */}
-      <div className="hidden lg:flex relative flex-1 px-8 lg:px-16 py-12 flex-col justify-center items-center gap-12 text-center overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center xl:justify-center">
-          <div className="relative w-[560px] h-[560px] md:w-[640px] md:h-[640px] xl:w-[780px] xl:h-[780px] opacity-40 xl:-translate-y-16 transition-transform duration-500">
-            <SparklesCore
-              background="transparent"
-              minSize={0.4}
-              maxSize={1}
-              particleDensity={450}
-              className="w-full h-full [mask-image:radial-gradient(circle_at_center,white_28%,transparent_72%)]"
-              particleColor="#FFFFFF"
-            />
+
+      <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-white/5" />
+      <div className="absolute inset-0 backdrop-blur-[18px]" />
+      <BrandSignature className="opacity-80" />
+
+      {/* Left marketing panel */}
+      <div className="hidden lg:flex relative flex-1 px-10 xl:px-16 py-12 flex-col justify-center gap-12 overflow-hidden">
+        <div className="relative z-10 flex items-center justify-between">
+          <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/70 backdrop-blur">
+            Premium AI Creator Studio
+          </div>
+          <div className="flex items-center gap-2 text-sm text-white/60">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(46,230,212,0.7)]" />
+            Always-on voice memory
           </div>
         </div>
-        <div className="relative z-10 max-w-2xl w-full space-y-10">
-          <div>
-            <Image
-              src="/sl-logo.svg"
-              alt="BrandVoice.ai Logo"
-              width={96}
-              height={96}
-              className="dark:invert opacity-90 mx-auto"
-              priority
-            />
-          </div>
-          <div className="space-y-6">
-            <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-fuchsia-400 to-indigo-400">
-              Precision Content Repurposing
-            </h1>
-            <p className="text-lg lg:text-xl text-gray-300 leading-relaxed max-w-xl mx-auto">
-              Transform long‑form intelligence into high‑performance,
-              channel‑native assets. Maintain voice integrity. Accelerate
-              distribution. Unlock systematic scale.
-            </p>
-          </div>
-          <div className="w-full max-w-2xl mx-auto">
-            <ul className="hidden xl:flex flex-wrap justify-center gap-x-12 gap-y-8">
-              <FeatureItem
-                title="Strategic Repurposing"
-                desc="Framework-driven extraction and restructuring of key narratives."
-              />
-              <FeatureItem
-                title="Brand Consistency"
-                desc="Adaptive memory preserves tone, lexicon, and positioning."
-              />
-              <FeatureItem
-                title="Channel Optimization"
-                desc="Format, length, hooks & CTAs tuned per platform dynamics."
-              />
-              <FeatureItem
-                title="Rapid Experimentation"
-                desc="Generate controlled variants for data-backed iteration."
-              />
-              <FeatureItem
-                title="Enterprise Security"
-                desc="Isolated processing with strict data handling boundaries."
-              />
-              <FeatureItem
-                title="Scalable Automation"
-                desc="Batch workflows & scheduled publishing pipelines."
-              />
-            </ul>
-            <div className="xl:hidden relative overflow-hidden">
-              <div className="flex animate-scroll-infinite gap-x-8">
-                {FEATURES.concat(FEATURES).map((f, i) => (
-                  <FeatureItemCarousel key={i} title={f.title} desc={f.desc} />
+
+        <div className="relative z-10 grid grid-cols-1 xl:grid-cols-[1.1fr_0.9fr] gap-8 items-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="space-y-8"
+          >
+            <div className="flex items-center gap-3 text-sm text-white/70">
+              <div className="h-8 w-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                <Image src="/sl-logo.svg" alt="BrandVoice.ai Logo" width={20} height={20} className="dark:invert opacity-90" />
+              </div>
+              <span className="font-semibold text-white/80">BrandVoice Identity Engine</span>
+            </div>
+            <div className="space-y-4">
+              <h1 className="text-4xl xl:text-5xl font-extrabold leading-tight tracking-tight text-white">
+                Precision Content Repurposing with{" "}
+                <span className="bg-gradient-to-r from-purple-400 via-fuchsia-300 to-amber-200 bg-clip-text text-transparent">
+                  voice-first intelligence
+                </span>
+              </h1>
+              <p className="text-lg text-white/70 leading-relaxed max-w-2xl">
+                Transform long-form intelligence into cinematic, channel-native drops. Every hook, CTA, and cadence
+                respects your brand&apos;s voice memory—accelerated by spark trails and echo lines that feel unmistakably BrandVoice.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3 text-sm text-white/70">
+              <Pill>Voice-safe processing</Pill>
+              <Pill>Dynamic hooks + echoes</Pill>
+              <Pill>Format-aware layouts</Pill>
+              <Pill>Experiment-ready variants</Pill>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.65, ease: "easeOut", delay: 0.05 }}
+            className="relative rounded-2xl border border-white/10 bg-white/5 px-8 py-7 backdrop-blur-xl shadow-[0_25px_120px_rgba(0,0,0,0.45)] overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(124,58,237,0.25),transparent_45%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_40%,rgba(46,230,212,0.2),transparent_45%)]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-white/5" />
+            <div className="relative flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.28em] text-white/60">Echo Console</p>
+                <p className="text-xl font-semibold text-white">Voice Waves</p>
+              </div>
+              <div className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-amber-200">
+                Live status
+              </div>
+            </div>
+            <div className="mt-5 space-y-4">
+              <div className="relative h-40 w-full overflow-hidden rounded-xl border border-white/10 bg-black/40">
+                <SparklesCore
+                  background="transparent"
+                  minSize={0.4}
+                  maxSize={1.4}
+                  particleDensity={520}
+                  className="w-full h-full [mask-image:radial-gradient(circle_at_center,white_15%,transparent_70%)]"
+                  particleColor="#7C3AED"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-transparent to-purple-500/10" />
+                <motion.div
+                  className="absolute inset-0"
+                  animate={{ opacity: [0.5, 0.9, 0.6] }}
+                  transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                >
+                  <div className="absolute inset-x-6 bottom-6 h-[2px] bg-gradient-to-r from-purple-400 via-emerald-300 to-amber-200 blur-sm opacity-90" />
+                  <div className="absolute inset-x-8 bottom-8 h-[1px] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+                </motion.div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {FEATURES.slice(0, 4).map((f, i) => (
+                  <motion.div
+                    key={f.title}
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: "easeOut", delay: 0.05 * i }}
+                    className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-left shadow-[0_10px_40px_rgba(0,0,0,0.35)]"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-200 shadow-[0_0_12px_rgba(255,207,112,0.8)]" />
+                      <p className="text-xs text-white/70 uppercase tracking-[0.08em]">{f.title}</p>
+                    </div>
+                    <p className="mt-2 text-sm text-white/80 leading-snug">{f.desc}</p>
+                  </motion.div>
                 ))}
               </div>
             </div>
-          </div>
-          <p className="text-sm text-gray-500 max-w-md mx-auto">
-            Built for teams treating content as an operating system.{" "}
-            {isSignIn ? "Sign in" : "Create an account"} to access your
-            workspace.
-          </p>
+          </motion.div>
         </div>
+
+        <motion.ul
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: { opacity: 0 },
+            visible: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.25 } },
+          }}
+          className="relative z-10 grid grid-cols-2 xl:grid-cols-3 gap-4 text-left"
+        >
+          {FEATURES.map((feature) => (
+            <FeatureItem key={feature.title} title={feature.title} desc={feature.desc} />
+          ))}
+        </motion.ul>
       </div>
+
       {/* Right auth panel */}
-      <div className="relative z-10 px-6 md:px-10 py-12 flex flex-col lg:items-center lg:justify-center items-center justify-center overflow-hidden bg-purple-600/10 border-t lg:border-t-0 lg:border-l border-purple-500/20 w-full lg:w-auto lg:flex-none min-h-screen lg:min-h-0">
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/70" />
+      <div className="relative z-10 px-6 md:px-10 py-12 flex flex-col lg:items-center lg:justify-center items-center justify-center overflow-hidden w-full lg:w-auto lg:flex-none min-h-screen lg:min-h-0">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/10 via-black/30 to-black/70" />
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center lg:hidden">
-          <div className="relative w-[480px] h-[480px] sm:w-[560px] sm:h-[560px] opacity-35 -translate-y-8">
+          <div className="relative w-[520px] h-[520px] sm:w-[560px] sm:h-[560px] opacity-40 -translate-y-6">
             <SparklesCore
               background="transparent"
               minSize={0.4}
               maxSize={1}
-              particleDensity={380}
-              className="w-full h-full [mask-image:radial-gradient(circle_at_center,white_26%,transparent_70%)]"
-              particleColor="#FFFFFF"
+              particleDensity={420}
+              className="w-full h-full [mask-image:radial-gradient(circle_at_center,white_20%,transparent_70%)]"
+              particleColor="#7C3AED"
             />
           </div>
         </div>
@@ -127,25 +174,48 @@ export function SharedAuthLayout({ mode, children }: SharedAuthLayoutProps) {
           <Image
             src="/sl-logo.svg"
             alt="BrandVoice.ai Logo"
-            width={80}
-            height={80}
+            width={84}
+            height={84}
             className="dark:invert opacity-90"
             priority
           />
         </div>
-        <div className="space-y-6 relative z-10 w-full max-w-md text-center lg:text-left">
-          <div className="space-y-2">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="space-y-6 relative z-10 w-full max-w-md text-center lg:text-left rounded-2xl border border-white/10 bg-white/5 px-6 py-7 backdrop-blur-xl shadow-[0_25px_120px_rgba(0,0,0,0.45)]"
+        >
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(124,58,237,0.18),transparent_45%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_0%,rgba(46,230,212,0.22),transparent_45%)]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-white/5" />
+          <div className="relative space-y-2">
+            <p className="text-xs uppercase tracking-[0.24em] text-white/60">
+              {isSignIn ? "Return to your studio" : "Step inside"}
+            </p>
             <h2 className="text-2xl font-semibold">
               {isSignIn ? "Welcome back" : "Create your account"}
             </h2>
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-300 text-sm">
               {isSignIn
                 ? "Sign in to access your workspace"
                 : "Get started in seconds"}
             </p>
           </div>
-          {children}
-        </div>
+          <div className="relative">
+            <div className="absolute -inset-4 rounded-3xl border border-purple-400/10" />
+            <div className="relative">{children}</div>
+          </div>
+          <div className="relative space-y-2 text-sm text-white/60">
+            <div className="flex items-center gap-2 justify-center lg:justify-start">
+              <span className="h-1.5 w-1.5 rounded-full bg-purple-400 shadow-[0_0_12px_rgba(124,58,237,0.7)]" />
+              <p className="font-medium text-white/80">Secured by BrandVoice identity layer</p>
+            </div>
+            <p className="text-xs text-white/50">
+              Built for teams treating content as an operating system. {isSignIn ? "Sign in" : "Create an account"} to access your workspace.
+            </p>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
@@ -180,16 +250,21 @@ const FEATURES = [
 
 function FeatureItem({ title, desc }: { title: string; desc: string }) {
   return (
-    <li className="w-full sm:w-1/2 xl:w-1/3 px-2 flex">
-      <div className="border-l-2 border-white/50 pl-4 py-2 flex flex-col justify-start gap-1 min-h-[68px] w-full">
-        <div className="text-sm font-medium text-gray-200 tracking-wide">
+    <motion.li
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+      className="rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-md shadow-[0_12px_50px_rgba(0,0,0,0.35)] hover:border-purple-400/30"
+    >
+      <div className="flex flex-col gap-1">
+        <div className="text-sm font-semibold text-white tracking-tight">
           {title}
         </div>
-        <div className="text-xs text-gray-500 leading-snug max-w-[260px]">
+        <div className="text-xs text-white/65 leading-snug">
           {desc}
         </div>
       </div>
-    </li>
+    </motion.li>
   );
 }
 
@@ -203,5 +278,14 @@ function FeatureItemCarousel({ title, desc }: { title: string; desc: string }) {
         <div className="text-xs text-gray-500 leading-snug">{desc}</div>
       </div>
     </div>
+  );
+}
+
+function Pill({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">
+      <span className="h-1.5 w-1.5 rounded-full bg-amber-200 shadow-[0_0_8px_rgba(255,207,112,0.8)]" />
+      {children}
+    </span>
   );
 }

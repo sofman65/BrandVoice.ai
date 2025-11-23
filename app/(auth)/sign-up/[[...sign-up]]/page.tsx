@@ -1,12 +1,22 @@
 "use client";
 
-import { SignUpForm } from "@/components/auth/auth-forms";
-import { SharedAuthLayout } from "@/shared/components/auth/shared-auth-layout";
+import { SignUp } from "@clerk/nextjs";
+import { AuthWrapper } from "@/shared/components/auth-wrapper";
+import { brandVoiceClerkAppearance } from "@/shared/components/clerk-appearance";
 
 export default function Page() {
   return (
-    <SharedAuthLayout mode="sign-up">
-      <SignUpForm />
-    </SharedAuthLayout>
+    <AuthWrapper
+      title="Create your account"
+      subtitle="Start transforming your content instantly"
+    >
+      <SignUp
+        appearance={brandVoiceClerkAppearance}
+        path="/sign-up"
+        routing="path"
+        signInUrl="/sign-in"
+        afterSignUpUrl="/"
+      />
+    </AuthWrapper>
   );
 }

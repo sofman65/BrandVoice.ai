@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { CopyButton } from "@/components/copy-button"
 import { Badge } from "@/components/ui/badge"
 import { VoiceAlertBanner } from "@/features/voices/components/voice-alert-banner"
-import { Linkedin, Instagram, MessageCircle, Video, Sparkles, ImageIcon } from "lucide-react"
+import { Linkedin, Instagram, MessageCircle, Video, ImageIcon } from "lucide-react"
 import type { GeneratedContent, CarouselSlide } from "@/lib/types"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -14,13 +14,9 @@ import Image from "next/image"
 
 import { readableSlide, getSlideImage } from "@/lib/utils"
 
-// Helper to get image prompt from slide
-const getSlideImagePrompt = (slide: CarouselSlide): string | null => {
-  if (typeof slide === "string") {
-    return null;
-  }
-  return slide.imagePrompt || null;
-}
+// Helper to extract image prompt
+const getSlideImagePrompt = (slide: CarouselSlide): string | null =>
+  typeof slide === "string" ? null : slide.imagePrompt || null
 
 interface ContentResultsProps {
   data: GeneratedContent
@@ -30,227 +26,217 @@ export function ContentResults({ data }: ContentResultsProps) {
   const [slides, setSlides] = useState<CarouselSlide[]>(data.carousel)
   const [isGenerating, setIsGenerating] = useState(false)
 
-  const anyMissingImages = slides.some((s) => typeof s !== 'string' && !s.imageUrl)
+  const anyMissingImages = slides.some((s) => typeof s !== "string" && !s.imageUrl)
 
   const triggerImageGeneration = async () => {
     try {
       setIsGenerating(true)
-      const response = await fetch("/api/images/generate", {
+      const res = await fetch("/api/images/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slides }),
       })
-      if (!response.ok) throw new Error(`HTTP ${response.status}`)
-      const payload = await response.json()
-      if (!payload.success) throw new Error(payload.error || "Failed to generate images")
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const payload = await res.json()
+      if (!payload.success) throw new Error(payload.error || "Image generation failed")
       setSlides(payload.slides)
-    } catch (err) {
-      console.error(err)
     } finally {
       setIsGenerating(false)
     }
   }
 
   return (
-    <div className="w-full">
-      {/* Voice Alert Banner */}
+    <div className="w-full space-y-6">
       <VoiceAlertBanner />
-      
+
+      {/* TABS */}
       <Tabs defaultValue="linkedin" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-white/10 backdrop-blur-sm border-white/20">
-        <TabsTrigger
-          value="linkedin"
-          className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-300 text-gray-300"
-        >
-          <Linkedin className="h-4 w-4 mr-2" />
-          LinkedIn
-        </TabsTrigger>
-        <TabsTrigger
-          value="carousel"
-          className="data-[state=active]:bg-pink-500/20 data-[state=active]:text-pink-300 text-gray-300"
-        >
-          <Instagram className="h-4 w-4 mr-2" />
-          Carousel
-        </TabsTrigger>
-        <TabsTrigger
-          value="threads"
-          className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300 text-gray-300"
-        >
-          <MessageCircle className="h-4 w-4 mr-2" />
-          Threads
-        </TabsTrigger>
-        <TabsTrigger
-          value="video"
-          className="data-[state=active]:bg-green-500/20 data-[state=active]:text-green-300 text-gray-300"
-        >
-          <Video className="h-4 w-4 mr-2" />
-          Video
-        </TabsTrigger>
-      </TabsList>
+        <TabsList className="grid grid-cols-4 bg-black/20 border border-white/10 backdrop-blur-md rounded-lg p-1">
+          <TabsTrigger value="linkedin" className="text-white/60 data-[state=active]:bg-white/10 data-[state=active]:text-white">
+            <Linkedin className="h-4 w-4 mr-2" /> LinkedIn
+          </TabsTrigger>
+          <TabsTrigger value="carousel" className="text-white/60 data-[state=active]:bg-white/10 data-[state=active]:text-white">
+            <Instagram className="h-4 w-4 mr-2" /> Carousel
+          </TabsTrigger>
+          <TabsTrigger value="threads" className="text-white/60 data-[state=active]:bg-white/10 data-[state=active]:text-white">
+            <MessageCircle className="h-4 w-4 mr-2" /> Threads
+          </TabsTrigger>
+          <TabsTrigger value="video" className="text-white/60 data-[state=active]:bg-white/10 data-[state=active]:text-white">
+            <Video className="h-4 w-4 mr-2" /> Video
+          </TabsTrigger>
+        </TabsList>
 
-      <TabsContent value="linkedin" className="space-y-4">
-        <Card className="bg-white/5 backdrop-blur-sm border-white/10">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Linkedin className="h-5 w-5 text-blue-400" />
-                <CardTitle className="text-white">LinkedIn Post</CardTitle>
+        {/* -------------------------------- */}
+        {/* LINKEDIN SECTION */}
+        {/* -------------------------------- */}
+        <TabsContent value="linkedin">
+          <Card className="bg-black/20 border border-white/10 backdrop-blur-lg">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Linkedin className="text-white/60 h-5 w-5" />
+                  <CardTitle className="text-white">LinkedIn Post</CardTitle>
+                </div>
+                <CopyButton text={data.linkedin} />
               </div>
-              <CopyButton text={data.linkedin} />
-            </div>
-            <CardDescription className="text-gray-400">
-              Professional networking content optimized for business audiences
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              value={data.linkedin}
-              readOnly
-              className="min-h-[200px] bg-white/5 border-white/10 text-white resize-none focus:ring-blue-400/20 focus:border-blue-400"
-            />
-          </CardContent>
-        </Card>
-      </TabsContent>
+              <CardDescription className="text-white/40">
+                Long-form professional post optimized for LinkedIn reach.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                value={data.linkedin}
+                readOnly
+                className="min-h-[200px] bg-black/30 border-white/10 text-white resize-none"
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      <TabsContent value="carousel" className="space-y-4">
-        <Card className="bg-white/5 backdrop-blur-sm border-white/10">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Instagram className="h-5 w-5 text-pink-400" />
-                <CardTitle className="text-white">Instagram Carousel</CardTitle>
-                <Badge variant="secondary" className="bg-pink-500/20 text-pink-300 border-pink-500/30">
-                  {slides.length} slides
-                </Badge>
+        {/* -------------------------------- */}
+        {/* CAROUSEL SECTION */}
+        {/* -------------------------------- */}
+        <TabsContent value="carousel" className="space-y-4">
+          <Card className="bg-black/20 border border-white/10 backdrop-blur-lg">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Instagram className="text-white/60 h-5 w-5" />
+                  <CardTitle className="text-white">Instagram Carousel</CardTitle>
+                  <Badge className="bg-white/10 text-white/60 border-white/20">{slides.length} slides</Badge>
+                </div>
               </div>
-            </div>
-            <CardDescription className="text-gray-400">Multi-slide storytelling content for Instagram</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {anyMissingImages && (
-              <div className="flex items-center justify-end">
-                <Button onClick={triggerImageGeneration} disabled={isGenerating} className="bg-pink-600 hover:bg-pink-700">
-                  {isGenerating ? "Generating images..." : "Generate images"}
-                </Button>
-              </div>
-            )}
+              <CardDescription className="text-white/40">
+                Scroll-ready storytelling for Instagram carousels.
+              </CardDescription>
+            </CardHeader>
 
-            {slides.map((slide, index) => {
-              const imageUrl = getSlideImage(slide);
-              const imagePrompt = getSlideImagePrompt(slide);
+            <CardContent className="space-y-6">
+              {anyMissingImages && (
+                <div className="flex justify-end">
+                  <Button
+                    onClick={triggerImageGeneration}
+                    disabled={isGenerating}
+                    className="bg-white/10 text-white hover:bg-white/20 border border-white/10"
+                  >
+                    {isGenerating ? "Generating…" : "Generate Missing Images"}
+                  </Button>
+                </div>
+              )}
 
-              return (
-                <div key={index} className="space-y-4 border border-white/10 rounded-lg p-4 bg-white/5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                        {index + 1}
+              {/* SLIDES */}
+              {slides.map((slide, i) => {
+                const img = getSlideImage(slide)
+                const prompt = getSlideImagePrompt(slide)
+
+                return (
+                  <div key={i} className="p-4 border border-white/10 bg-black/20 rounded-xl space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-white/10 text-white flex items-center justify-center text-xs font-semibold">
+                          {i + 1}
+                        </div>
+                        <span className="text-white font-medium">Slide {i + 1}</span>
                       </div>
-                      <span className="text-white font-medium">Slide {index + 1}</span>
+                      <CopyButton text={readableSlide(slide)} />
                     </div>
-                    <CopyButton text={readableSlide(slide)} />
-                  </div>
 
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {/* TEXT */}
                       <Textarea
                         value={readableSlide(slide)}
                         readOnly
-                        className="bg-white/5 border-white/10 text-white resize-none focus:ring-pink-400/20 focus:border-pink-400 h-full min-h-[100px]"
+                        className="bg-black/30 border-white/10 text-white resize-none min-h-[120px]"
                       />
+
+                      {/* IMAGE */}
+                      {img ? (
+                        <div className="relative h-[200px] rounded-lg overflow-hidden border border-white/10 bg-black/10">
+                          <Image
+                            src={img}
+                            alt={`Slide ${i + 1}`}
+                            fill
+                            className="object-cover transition-transform hover:scale-105 duration-500"
+                          />
+                        </div>
+                      ) : prompt ? (
+                        <div className="flex flex-col items-center justify-center h-[200px] text-white/50 border border-white/10 bg-black/10 rounded-lg p-4 text-center space-y-2">
+                          <ImageIcon className="h-6 w-6 opacity-60" />
+                          <p className="text-sm italic line-clamp-2">{prompt}</p>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-[200px] text-white/40 border border-white/10 bg-black/10 rounded-lg p-4">
+                          <ImageIcon className="h-6 w-6 opacity-40" />
+                          <p className="text-sm mt-2">No image</p>
+                        </div>
+                      )}
                     </div>
-
-                    {imageUrl ? (
-                      <div className="relative h-[200px] rounded-lg overflow-hidden border border-white/10 bg-gradient-to-r from-pink-500/20 to-purple-500/20">
-                        <Image
-                          src={imageUrl}
-                          alt={typeof slide === 'string' ? slide : slide.heading || `Slide ${index + 1}`}
-                          fill
-                          style={{ objectFit: 'cover' }}
-                          className="hover:scale-105 transition-transform duration-300"
-                        />
-                      </div>
-                    ) : imagePrompt ? (
-                      <div className="flex items-center justify-center h-[200px] rounded-lg border border-white/10 bg-gradient-to-r from-pink-500/10 to-purple-500/10 p-4">
-                        <div className="text-center space-y-3">
-                          <ImageIcon className="h-8 w-8 mx-auto text-pink-400/60" />
-                          <p className="text-sm text-gray-400 italic">
-                            {imagePrompt.substring(0, 120)}...
-                          </p>
-                          <Badge variant="outline" className="text-xs mx-auto bg-white/5">
-                            {isGenerating ? "Generating..." : "Ready to generate"}
-                          </Badge>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center h-[200px] rounded-lg border border-white/10 bg-white/5 p-4">
-                        <div className="text-center space-y-3">
-                          <ImageIcon className="h-8 w-8 mx-auto text-gray-500/60" />
-                          <p className="text-sm text-gray-400">No image available</p>
-                        </div>
-                      </div>
-                    )}
                   </div>
+                )
+              })}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* -------------------------------- */}
+        {/* THREADS */}
+        {/* -------------------------------- */}
+        <TabsContent value="threads">
+          <Card className="bg-black/20 border border-white/10 backdrop-blur-lg">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5 text-white/60" />
+                  <CardTitle className="text-white">Threads Post</CardTitle>
+                  <Badge className="bg-white/10 text-white/60 border-white/20">
+                    {data.threads.length} chars
+                  </Badge>
                 </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="threads" className="space-y-4">
-        <Card className="bg-white/5 backdrop-blur-sm border-white/10">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <MessageCircle className="h-5 w-5 text-purple-400" />
-                <CardTitle className="text-white">Threads Post</CardTitle>
-                <Badge variant="secondary" className="bg-purple-500/20 text-purple-300 border-purple-500/30">
-                  {data.threads.length} chars
-                </Badge>
+                <CopyButton text={data.threads} />
               </div>
-              <CopyButton text={data.threads} />
-            </div>
-            <CardDescription className="text-gray-400">Conversational content for Threads platform</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              value={data.threads}
-              readOnly
-              className="min-h-[150px] bg-white/5 border-white/10 text-white resize-none focus:ring-purple-400/20 focus:border-purple-400"
-            />
-          </CardContent>
-        </Card>
-      </TabsContent>
+              <CardDescription className="text-white/40">
+                Conversational short-form content.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                value={data.threads}
+                readOnly
+                className="min-h-[150px] bg-black/30 border-white/10 text-white resize-none"
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      <TabsContent value="video" className="space-y-4">
-        <Card className="bg-white/5 backdrop-blur-sm border-white/10">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Video className="h-5 w-5 text-green-400" />
-                <CardTitle className="text-white">Video Script</CardTitle>
-                <Badge variant="secondary" className="bg-green-500/20 text-green-300 border-green-500/30">
-                  <Sparkles className="h-3 w-3 mr-1" />
-                  Ready to film
-                </Badge>
+        {/* -------------------------------- */}
+        {/* VIDEO SCRIPT */}
+        {/* -------------------------------- */}
+        <TabsContent value="video">
+          <Card className="bg-black/20 border border-white/10 backdrop-blur-lg">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Video className="h-5 w-5 text-white/60" />
+                  <CardTitle className="text-white">Video Script</CardTitle>
+                  <Badge className="bg-white/10 text-white/60 border-white/20">Ready</Badge>
+                </div>
+                <CopyButton text={data.video_script} />
               </div>
-              <CopyButton text={data.video_script} />
-            </div>
-            <CardDescription className="text-gray-400">
-              Complete script for Instagram Reels and TikTok videos
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              value={data.video_script}
-              readOnly
-              className="min-h-[250px] bg-white/5 border-white/10 text-white resize-none focus:ring-green-400/20 focus:border-green-400 font-mono text-sm"
-            />
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
+              <CardDescription className="text-white/40">
+                Short-form script for Reels / TikTok
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent>
+              <Textarea
+                value={data.video_script}
+                readOnly
+                className="min-h-[240px] bg-black/30 border-white/10 text-white font-mono text-sm resize-none"
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
