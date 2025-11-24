@@ -1,0 +1,32 @@
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="waveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#9B5BFF" stop-opacity="0.9"/>
+    <stop offset="35%" stop-color="#7C3AED" stop-opacity="0.9"/>
+    <stop offset="60%" stop-color="#2EE6D4" stop-opacity="0.8"/>
+    <stop offset="85%" stop-color="#FFCF70" stop-opacity="0.7"/>
+    <stop offset="100%" stop-color="#7C3AED" stop-opacity="0.8"/>
+  </linearGradient>
+</defs>
+<rect width="1920" height="1080" fill="url(#bg)"/>
+<defs>
+  <radialGradient id="bg" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(480 180) rotate(65) scale(1200 800)">
+    <stop stop-color="#0b0c11"/>
+    <stop offset="1" stop-color="#07070b"/>
+  </radialGradient>
+</defs>
+<g filter="url(#glow)">
+  <path d="M-200 500C200 380 520 620 1080 480C1440 390 1700 470 2100 500" stroke="url(#waveGradient)" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <path d="M-200 540C220 420 520 600 1100 460C1480 370 1700 460 2100 520" stroke="url(#waveGradient)" stroke-width="1.6" stroke-linecap="round" opacity="0.6" fill="none"/>
+  <path d="M-200 580C240 440 520 640 1120 500C1520 380 1720 480 2100 560" stroke="url(#waveGradient)" stroke-width="1.6" stroke-linecap="round" opacity="0.6" fill="none"/>
+</g>
+<defs>
+  <filter id="glow" x="-400" y="200" width="2600" height="600" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+    <feGaussianBlur stdDeviation="12" result="blur"/>
+    <feMerge>
+      <feMergeNode in="blur"/>
+      <feMergeNode in="SourceGraphic"/>
+    </feMerge>
+  </filter>
+</defs>
+</svg>

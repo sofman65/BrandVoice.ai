@@ -66,6 +66,14 @@
 - ✅ All outputs copyable  
 - ✅ Saved back to mission  
 
+<!-- **Story 2.2** : As a user, I want the AI to automatically pull relevant snippets from my Content Bank and past missions so my outputs sound consistent.
+
+✅ System queries embeddings + lexical search
+
+✅ Results injected into prompt automatically
+
+✅ User sees which sources were used -->
+
 ---
 
 ### Epic 3 — Content Bank

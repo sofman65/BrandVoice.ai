@@ -1,1 +1,1 @@
-export { default } from "@/app/repurpose/page"
+export { default } from "@/app/(dashboard)/repurpose/page"

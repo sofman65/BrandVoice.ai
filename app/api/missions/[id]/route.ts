@@ -65,7 +65,6 @@ export async function PUT(
     const updateData: any = {};
     if (json.title !== undefined) updateData.title = json.title;
     if (json.pinned !== undefined) updateData.pinned = Boolean(json.pinned);
-    if (json.outputs !== undefined) updateData.outputs = json.outputs;
 
     const updated = await db
       .update(missions)
