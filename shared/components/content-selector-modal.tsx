@@ -152,7 +152,9 @@ export function ContentSelectorModal({
           "max-w-3xl w-full p-0 overflow-hidden",
           "rounded-xl border border-white/10",
           "bg-black/50 backdrop-blur-2xl shadow-2xl",
-          "animate-in fade-in-0 zoom-in-90 duration-200"
+          "animate-in fade-in-0 zoom-in-90 duration-200",
+          // Hide shadcn's default close button; we provide our own in the header
+          "[&>button:last-of-type]:hidden"
         )}
       >
         {/* Header */}
