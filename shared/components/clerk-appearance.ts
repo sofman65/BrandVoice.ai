@@ -1,6 +1,6 @@
 export const brandVoiceClerkAppearance = {
   layout: {
-    logoPlacement: "none", // avoid duplicate logo (we already show one in AuthWrapper)
+    logoPlacement: "none",
     socialButtonsPlacement: "top",
   },
   variables: {
@@ -17,12 +17,12 @@ export const brandVoiceClerkAppearance = {
     spacingUnit: "8px",
   },
   elements: {
-    card: "bg-white/10 backdrop-blur-xl border border-white/20 text-white shadow-2xl",
-    headerTitle: "text-white",
-    headerSubtitle: "text-gray-300",
+    card: "bg-white/6 backdrop-blur-xl border border-white/12 text-white shadow-[0_25px_120px_rgba(0,0,0,0.55)] rounded-2xl",
+    headerTitle: "text-white text-lg font-semibold",
+    headerSubtitle: "text-white/70",
     formFieldLabel: "text-white font-medium",
     formFieldInput:
-      "bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-400 focus:ring-purple-400/20 h-11",
+      "bg-white/8 border-white/15 text-white placeholder:text-white/50 focus:border-purple-400 focus:ring-purple-400/25 h-11",
     formButtonPrimary:
       "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold h-11",
     footerActionLink: "text-purple-300 hover:text-purple-200",
@@ -31,7 +31,11 @@ export const brandVoiceClerkAppearance = {
     socialButtonsBlockButton:
       "bg-white/10 border-white/20 text-white hover:bg-white/20 h-11",
     socialButtonsBlockButtonText: "text-white",
-    formFieldInputShowPasswordButton: "text-gray-300 hover:text-white",
+    formFieldInputShowPasswordButton: "text-white/60 hover:text-white",
+    footer: "hidden",
+    footerAction__signIn: "hidden",
+    footerAction__signUp: "hidden",
+    devModeBadge: "hidden",
   },
 } as const;
 
