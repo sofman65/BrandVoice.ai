@@ -5,8 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, usePathname, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
-import { brandVoiceClerkAppearance } from "@/shared/components/clerk-appearance";
+import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/nextjs";
+import { brandVoiceClerkAppearance, brandVoiceUserButtonAppearance } from "@/shared/components/clerk-appearance";
 import { toast } from "sonner";
 import {
   ChevronLeft,
@@ -32,6 +32,7 @@ export function MissionSidebar({ className }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useParams();
+  const { user } = useUser();
 
   const [collapsed, setCollapsed] = useState(false);
 
@@ -384,9 +385,21 @@ export function MissionSidebar({ className }: Props) {
       </div>
 
       {/* FOOTER */}
-      <div className="border-t border-white/10 px-3 py-3 flex items-center justify-center">
+      <div className="border-t border-white/10 px-3 py-3">
         <SignedIn>
-          <UserButton appearance={brandVoiceClerkAppearance} />
+          <div className="flex items-center gap-3">
+            <UserButton appearance={brandVoiceUserButtonAppearance} />
+            <div className="min-w-0">
+              <div className="text-sm font-semibold text-white truncate">
+                {user?.fullName || user?.username || user?.primaryEmailAddress?.emailAddress || "Account"}
+              </div>
+              {user?.primaryEmailAddress?.emailAddress && (
+                <div className="text-xs text-white/60 truncate">
+                  {user.primaryEmailAddress.emailAddress}
+                </div>
+              )}
+            </div>
+          </div>
         </SignedIn>
 
         <SignedOut>

@@ -34,3 +34,28 @@ export const brandVoiceClerkAppearance = {
     formFieldInputShowPasswordButton: "text-gray-300 hover:text-white",
   },
 } as const;
+
+export const brandVoiceUserButtonAppearance = {
+  baseTheme: "dark" as const,
+  variables: {
+    colorPrimary: "#7C3AED",
+    colorText: "#ffffff",
+    colorBackground: "rgba(15,15,17,0.9)",
+    borderRadius: "12px",
+  },
+  elements: {
+    userButtonTrigger:
+      "border border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10 text-white shadow-none",
+    userButtonPopoverCard:
+      "bg-[#0f0f11]/95 backdrop-blur-2xl border border-white/10 shadow-[0_20px_80px_rgba(0,0,0,0.55)] text-white",
+    userButtonPopoverFooter: "hidden",
+    userButtonPopoverFooterContent: "hidden",
+    userPreviewMainIdentifier: "text-white font-semibold",
+    userPreviewSecondaryIdentifier: "text-white/60",
+    userButtonPopoverActionButton:
+      "text-white/80 hover:text-white hover:bg-white/10 rounded-lg",
+    userButtonPopoverActions: "gap-1",
+    userButtonPopoverMain: "text-white",
+    userButtonPopoverHeader: "border-b border-white/5",
+  },
+} as const;
