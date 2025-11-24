@@ -388,7 +388,7 @@ export function MissionSidebar({ className }: Props) {
       <div className="border-t border-white/10 px-3 py-3">
         <SignedIn>
           <div className="flex items-center gap-3">
-            <UserButton appearance={brandVoiceUserButtonAppearance} />
+            <UserButton appearance={brandVoiceUserButtonAppearance as any} />
             <div className="min-w-0">
               <div className="text-sm font-semibold text-white truncate">
                 {user?.fullName || user?.username || user?.primaryEmailAddress?.emailAddress || "Account"}
