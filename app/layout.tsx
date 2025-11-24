@@ -8,13 +8,14 @@ import { Toaster } from "sonner";
 import { Sora } from "next/font/google";
 import { MissionShell } from "@/shared/components/mission-shell";
 import { MissionSidebar } from "@/shared/components/mission-sidebar";
-import ClientPageWrapper from "@/components/client-page-wrapper";
 import "./globals.css";
+import { usePathname } from "next/navigation";
 
 const sora = Sora({ subsets: ["latin"] });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
+  const pathname = usePathname();
+    return (
     <ClerkProvider
       appearance={{
         elements: { formButtonPrimary: "bg-purple-600 hover:bg-purple-700" },
@@ -30,7 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <MissionShell
                     sidebar={<MissionSidebar />}
                     detail={
-                      <PageTransition>
+                      <PageTransition keyRoute={pathname}>
                         {children}
                       </PageTransition>
                     }
@@ -39,10 +40,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </SignedIn>
 
               <SignedOut>
-                <PageTransition>
-                  <ClientPageWrapper>
-                    {children}
-                  </ClientPageWrapper>
+                <PageTransition keyRoute={pathname}>
+                  {children}
                 </PageTransition>
               </SignedOut>
 
