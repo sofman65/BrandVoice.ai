@@ -20,7 +20,6 @@ import {
   type SourceType,
 } from "@/lib/utils";
 import { useLocalStorage } from "@/hooks/use-local-storage";
-import { InstagramPreview } from "@/components/instagram-preview";
 import { YouTubePreview } from "@/components/youtube-preview";
 import { ContentResults } from "@/features/missions/components/content-results";
 import { LOADING_STATES } from "@/lib/constants";
@@ -70,13 +69,54 @@ export default function RepurposePage() {
   // --------------------
   const mutation = useMutation({
     mutationFn: async (contentUrl: string) => {
+      // Step 1: Create a new mission or use existing one
+      let missionId = existingMissionId || localStorage.getItem("currentMissionId");
+      
+      if (!missionId && previewData) {
+        // Auto-create a mission before processing
+        const missionRes = await fetch("/api/missions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: previewData.title || "Untitled Mission",
+            platform: sourceType || "youtube",
+            sourceUrl: contentUrl,
+            description: previewData.description?.slice(0, 200) || null,
+          }),
+        });
+
+        if (!missionRes.ok) {
+          console.error("Failed to create mission");
+        } else {
+          const missionData = await missionRes.json();
+          missionId = missionData.data?.id;
+          if (missionId) {
+            localStorage.setItem("currentMissionId", missionId);
+          }
+        }
+      }
+
+      // Step 2: Build request body with voice profile
       const requestBody: any = { url: contentUrl };
 
       if (referenceContent) requestBody.referenceContent = referenceContent;
+      if (missionId) requestBody.missionId = missionId;
+      
+      // Pass the selected voice profile to the generation API
+      if (selectedVoice) {
+        requestBody.voice = {
+          id: selectedVoice.id,
+          name: selectedVoice.name,
+          tone: selectedVoice.tone,
+          style: selectedVoice.style,
+          vocabulary: selectedVoice.vocabulary,
+          audience: selectedVoice.audience,
+          hashtags: selectedVoice.hashtags,
+          ctaStyle: selectedVoice.cta,
+        };
+      }
 
-      const currentMissionId = localStorage.getItem("currentMissionId");
-      if (currentMissionId) requestBody.missionId = currentMissionId;
-
+      // Step 3: Call the process API
       const response = await fetch("/api/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -95,6 +135,7 @@ export default function RepurposePage() {
     onSuccess: () => {
       localStorage.removeItem("currentMissionId");
       window.dispatchEvent(new CustomEvent("missionCompleted"));
+      window.dispatchEvent(new CustomEvent("missionUpdated"));
       toast.success("Content generated successfully!");
     },
 
@@ -108,9 +149,10 @@ export default function RepurposePage() {
   // --------------------
   const handleUrlChange = async (value: string) => {
     setUrl(value);
-    const { isValid, type } = validateUrl(value);
+    const validation = validateUrl(value);
 
-    if (!value || !isValid || !type) {
+    // Don't process if empty, invalid, or not supported (Instagram)
+    if (!value || !validation.isValid || !validation.type || validation.notSupported) {
       setPreviewData(null);
       setSourceType(null);
       setShowPreview(false);
@@ -119,7 +161,7 @@ export default function RepurposePage() {
       return;
     }
 
-    setSourceType(type);
+    setSourceType(validation.type);
     setShowPreview(true);
     setPreviewData(null);
 
@@ -150,7 +192,13 @@ export default function RepurposePage() {
     e.preventDefault();
 
     if (!url) return toast.error("Enter a URL");
-    if (!urlValidation.isValid) return toast.error("Invalid YouTube or Instagram link");
+    
+    // Show specific error for Instagram URLs (not yet supported)
+    if (urlValidation.notSupported && urlValidation.type === "instagram") {
+      return toast.error("Instagram support is coming soon! Please use a YouTube URL for now.");
+    }
+    
+    if (!urlValidation.isValid) return toast.error("Please enter a valid YouTube URL");
 
     mutation.mutate(url);
   };
@@ -201,7 +249,7 @@ export default function RepurposePage() {
           </h1>
 
           <p className="max-w-xl mx-auto text-white/60">
-            Paste a YouTube or Instagram link and get platform-ready posts in your voice.
+            Paste a YouTube link and get platform-ready posts in your voice.
           </p>
         </section>
 
@@ -314,16 +362,10 @@ export default function RepurposePage() {
             {showPreview && (
               <div className="rounded-lg bg-black/20 border border-white/10 p-4">
                 <div className="mb-3 flex items-center justify-between">
-                  <h4 className="text-white">
-                    {sourceType === "instagram" ? "Instagram Preview" : "YouTube Preview"}
-                  </h4>
+                  <h4 className="text-white">YouTube Preview</h4>
                 </div>
 
-                {sourceType === "instagram" ? (
-                  <InstagramPreview url={url} data={previewData} isLoading={!previewData} />
-                ) : (
-                  <YouTubePreview url={url} data={previewData} isLoading={!previewData} />
-                )}
+                <YouTubePreview url={url} data={previewData} isLoading={!previewData} />
               </div>
             )}
 

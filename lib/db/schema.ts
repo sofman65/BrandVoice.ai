@@ -95,3 +95,16 @@ export const presets = pgTable("presets", {
   byUserName: uniqueIndex("presets_user_name_uniq").on(t.userId, t.name),
   byUserIdx: index("presets_user_idx").on(t.userId),
 }));
+
+export const contentBank = pgTable("contentBank", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  title: text("title").notNull(),
+  url: text("url").notNull(),
+  tags: jsonb("tags"),
+  thumbnail: text("thumbnail"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  byUserIdx: index("content_bank_user_idx").on(t.userId),
+}));
