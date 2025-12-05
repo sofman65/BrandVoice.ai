@@ -78,40 +78,102 @@ export async function generateImagePrompts(slides: CarouselSlide[]): Promise<Car
  */
 async function generatePromptForSlide(slideContent: string, slideIndex: number, openai: any): Promise<string> {
     const slidePosition = getSlidePosition(slideIndex)
-
+    
+    // Determine the type of visual based on slide position and content
+    const visualStyle = getVisualStyleForSlide(slideIndex, slideContent)
+    
     const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-4o", // Upgraded for better prompt generation
         messages: [
             {
                 role: "system",
-                content: `You are an expert at creating image prompts for carousel slides about space technology and innovation.
-Your job is to create a detailed, vivid image prompt that would work well with DALL-E 3 to create a beautiful, 
-engaging image for a carousel slide. The prompt should:
-- Be descriptive and visual (colors, lighting, style, composition)
-- Match the content and emotion of the slide
-- Have a consistent futuristic, space-tech aesthetic
-- Be appropriate for a professional audience
-- Be 1-2 sentences (50-100 words max)
-- NOT include text overlays (no words in the image)
-- Focus on abstract, conceptual visualizations that represent the ideas, not literal text`
+                content: `You are an expert at creating image prompts for Instagram carousel slides about technology and business.
+Your job is to create a detailed, specific image prompt that matches the slide's content and position in the carousel.
+
+VISUAL STYLE GUIDELINES:
+${visualStyle}
+
+REQUIREMENTS:
+- Be specific to the actual content (mention technologies, concepts, or metaphors from the text)
+- Use rich visual descriptions (colors, lighting, composition, style)
+- Match the emotional tone (problem = darker/urgent, solution = bright/optimistic, CTA = inspiring/actionable)
+- Professional and modern aesthetic
+- 1-2 sentences, 50-100 words
+- NO text overlays or words in the image
+- Focus on metaphorical or conceptual representations, not literal interpretations`
             },
             {
                 role: "user",
-                content: `Create an image prompt for this ${slidePosition} carousel slide for a space technology company:
+                content: `Create an image prompt for this ${slidePosition} carousel slide:
 
 ${slideContent}
 
+The image should visually represent the concept without using any text.
 Return ONLY the prompt text, nothing else.`
             }
         ],
-        temperature: 0.7,
+        temperature: 0.8,
         max_tokens: 150,
     })
 
     const prompt = completion.choices[0]?.message?.content?.trim() ||
-        `A futuristic visualization of space technology with glowing elements, slide ${slideIndex + 1}`
+        getFallbackPromptForSlide(slideIndex, slideContent)
 
     return prompt
+}
+
+/**
+ * Determines the visual style based on slide position and content
+ */
+function getVisualStyleForSlide(index: number, content: string): string {
+    const contentLower = content.toLowerCase()
+    
+    // Slide 1: Hook/Problem
+    if (index === 0) {
+        if (contentLower.includes("problem") || contentLower.includes("mistake") || contentLower.includes("wrong")) {
+            return "Style: Dramatic contrast, darker tones with a single bright element representing hope/solution. Visual metaphor for the problem being addressed."
+        }
+        return "Style: Eye-catching, high contrast, bold composition. Use visual metaphors for transformation or breakthrough."
+    }
+    
+    // Slides 2-3: Value/Benefits
+    if (index >= 1 && index <= 3) {
+        if (contentLower.includes("data") || contentLower.includes("%") || contentLower.includes("number")) {
+            return "Style: Clean, data-visualization inspired, geometric patterns or abstract charts. Bright, optimistic colors."
+        }
+        if (contentLower.includes("tool") || contentLower.includes("technology") || contentLower.includes("framework")) {
+            return "Style: Technical but approachable, circuit-board patterns, code-inspired visuals, or tool metaphors. Modern tech aesthetic."
+        }
+        return "Style: Uplifting, progressive, showing growth or improvement. Use ascending elements, bright gradients."
+    }
+    
+    // Slide 4-5: CTA/Next Steps
+    if (index >= 4) {
+        return "Style: Inspiring and actionable, forward-motion elements like arrows or paths. Warm, inviting colors that encourage action."
+    }
+    
+    return "Style: Modern, professional, clean composition with appropriate visual metaphors for the content."
+}
+
+/**
+ * Generates a fallback prompt when API fails
+ */
+function getFallbackPromptForSlide(index: number, content: string): string {
+    const contentLower = content.toLowerCase()
+    
+    // Extract potential technologies or concepts
+    const techMatch = content.match(/\b(React|Vue|Angular|Next\.js|Nuxt|TypeScript|JavaScript|Python|Node|API|GraphQL|CSS|HTML|AI|ML|database|cloud|mobile|web|app)\b/gi)
+    const tech = techMatch ? techMatch[0] : "technology"
+    
+    const prompts = [
+        `A striking abstract visualization of ${tech} concepts with interconnected nodes and flowing data streams, vibrant purple and blue gradient, modern tech aesthetic`,
+        `Clean geometric patterns representing ${tech} architecture, minimalist design with bold accent colors, professional and modern`,
+        `Abstract representation of growth and optimization in ${tech}, ascending elements with bright gradient from orange to yellow, inspiring composition`,
+        `Dynamic visualization of problem-solving with ${tech}, contrast between dark challenges and bright solutions, dramatic lighting`,
+        `Forward-moving abstract elements suggesting progress and action with ${tech}, warm inviting colors, path leading to success`
+    ]
+    
+    return prompts[Math.min(index, prompts.length - 1)]
 }
 
 /**

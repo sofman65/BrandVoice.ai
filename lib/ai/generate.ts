@@ -3,6 +3,9 @@ import "server-only";
 
 import { getOpenAI, withTimeout } from "./openai-client";
 import { buildSystemPrompt, buildUserPrompt } from "./prompt-builders";
+import { analyzeContent, type ExtractedConcepts } from "./content-analyzer";
+import { generateCarouselStructure, structureToSlides, enhanceCarouselSlides } from "./carousel-generator";
+import { validateContent, shouldRegenerate, getImprovementInstructions } from "./quality-validator";
 import type { BrandVoice, GeneratedContent, ReferenceItem, PastMissionSummary } from "@/lib/types";
 import { sleep } from "@/lib/utils";
 import { generateImagePrompts, generateImagesForSlides } from "@/lib/image-generator";
@@ -57,26 +60,37 @@ export async function generateContentWithVoice({
   const openai = await getOpenAI();
   if (!openai) throw new Error("OpenAI client not initialized");
 
-  const systemPrompt = buildSystemPrompt({
+  // First, analyze the content to extract key concepts
+  console.log("🔍 Analyzing content for key concepts...");
+  const concepts = await analyzeContent(caption, transcript, voice);
+  console.log("✅ Extracted concepts:", {
+    topics: concepts.mainTopics.length,
+    technologies: concepts.technologies.length,
+    problems: concepts.problems.length,
+    hooks: concepts.hooks.length,
+  });
+
+  const systemPrompt = await buildSystemPrompt({
     voice,
     past: (pastMissions ?? []).slice(0, 3),
     refs: (referenceItems ?? []).slice(0, 3),
+    concepts,
   });
-  const userPrompt = buildUserPrompt({ caption, transcript, presetNote, targetNotes });
+  const userPrompt = buildUserPrompt({ caption, transcript, presetNote, targetNotes, concepts });
 
   try {
     const completion = await withTimeout(
       openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-4o", // Upgraded from gpt-4o-mini
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        temperature: 0.7,
-        max_tokens: 2500,
+        temperature: 0.85, // Increased for more creativity
+        max_tokens: 3000, // Increased token limit
         response_format: { type: "json_object" as any },
       }),
-      30000,
+      45000, // Increased timeout for gpt-4o
       "Content generation",
     );
 
@@ -101,16 +115,16 @@ export async function generateContentWithVoice({
 
         const retryCompletion = await withTimeout(
           openai.chat.completions.create({
-            model: "gpt-4o-mini",
+            model: "gpt-4o", // Upgraded from gpt-4o-mini
             messages: [
               { role: "system", content: "You are a JSON generator. Return ONLY valid JSON." },
               { role: "user", content: retryPrompt },
             ],
             temperature: 0.3,
-            max_tokens: 2500,
+            max_tokens: 3000,
             response_format: { type: "json_object" as any },
           }),
-          30000,
+          45000,
           "Content generation retry",
         );
         raw = retryCompletion.choices[0]?.message?.content || raw;
@@ -123,20 +137,106 @@ export async function generateContentWithVoice({
       throw new Error("AI response missing required fields");
     }
 
-    // Normalize carousel
+    // Enhance carousel with specialized structure if needed
+    console.log("🎨 Enhancing carousel structure...");
+    
+    // First normalize the carousel
     parsed.carousel = parsed.carousel.map((s, i: number) => {
       if (typeof s === "string") {
         return { heading: `Slide ${i + 1}`, body: s } as any;
       }
       return s as any;
     });
+    
     // Ensure exactly 5 slides
     while (parsed.carousel.length < 5) {
-      parsed.carousel.push({ heading: `Slide ${parsed.carousel.length + 1}`, body: "Continue the narrative..." } as any);
+      // If we have concepts, generate better filler slides
+      if (concepts && concepts.benefits.length > parsed.carousel.length - 1) {
+        const benefitIndex = parsed.carousel.length - 1;
+        parsed.carousel.push({
+          heading: `Benefit ${parsed.carousel.length}`,
+          body: concepts.benefits[benefitIndex] || "Continue discovering more value..."
+        } as any);
+      } else {
+        parsed.carousel.push({ 
+          heading: `Slide ${parsed.carousel.length + 1}`, 
+          body: "Continue the narrative..." 
+        } as any);
+      }
     }
     parsed.carousel = parsed.carousel.slice(0, 5);
+    
+    // Enhance carousel slides with concepts
+    parsed.carousel = await enhanceCarouselSlides(parsed.carousel as any, concepts);
 
-    // Image prompt + optional images
+    // Validate content quality
+    console.log("✅ Validating content quality...");
+    const qualityScore = validateContent(parsed, concepts, voice);
+    console.log(`📊 Quality Score: ${qualityScore.overall}/100`, {
+      specificity: qualityScore.specificity,
+      engagement: qualityScore.engagement,
+      value: qualityScore.value,
+    });
+
+    // If quality is too low, regenerate with improvement instructions
+    if (await shouldRegenerate(qualityScore)) {
+      console.log("⚠️ Quality below threshold, regenerating with improvements...");
+      const improvements = await getImprovementInstructions(qualityScore);
+      
+      const improvedPrompt = userPrompt + `\n\nIMPORTANT IMPROVEMENTS NEEDED:\n${improvements}`;
+      
+      try {
+        const improvedCompletion = await withTimeout(
+          openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: improvedPrompt },
+            ],
+            temperature: 0.75, // Slightly lower for improvement pass
+            max_tokens: 3000,
+            response_format: { type: "json_object" as any },
+          }),
+          45000,
+          "Content regeneration",
+        );
+
+        const improvedRaw = improvedCompletion.choices[0]?.message?.content;
+        if (improvedRaw) {
+          try {
+            const { GeneratedContentSchema } = await import("@/lib/types");
+            const improvedParsed = GeneratedContentSchema.parse(JSON.parse(improvedRaw)) as GeneratedContent;
+            
+            // Use improved version if it parsed successfully
+            parsed = improvedParsed;
+            
+            // Re-enhance carousel
+            parsed.carousel = parsed.carousel.map((s, i: number) => {
+              if (typeof s === "string") {
+                return { heading: `Slide ${i + 1}`, body: s } as any;
+              }
+              return s as any;
+            });
+            while (parsed.carousel.length < 5) {
+              parsed.carousel.push({ 
+                heading: `Slide ${parsed.carousel.length + 1}`, 
+                body: concepts.benefits[parsed.carousel.length - 1] || "Continue discovering value..." 
+              } as any);
+            }
+            parsed.carousel = parsed.carousel.slice(0, 5);
+            parsed.carousel = await enhanceCarouselSlides(parsed.carousel as any, concepts);
+            
+            console.log("✅ Content regenerated with improvements");
+          } catch (improveError) {
+            console.error("Failed to parse improved content, using original", improveError);
+          }
+        }
+      } catch (improveError) {
+        console.error("Failed to regenerate content, using original", improveError);
+      }
+    }
+
+    // Generate context-aware image prompts
     const slidesWithPrompts = await generateImagePrompts(parsed.carousel as any);
     if (!autoImage) {
       (parsed as any).carousel = slidesWithPrompts;

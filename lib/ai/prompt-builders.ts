@@ -1,4 +1,6 @@
 import type { BrandVoice, ReferenceItem, PastMissionSummary } from "@/lib/types";
+import type { ExtractedConcepts } from "./content-analyzer";
+import { formatConceptsForPrompt } from "./content-analyzer";
 
 const CLAMP = (s = "", max = 800) => (s.length > max ? s.slice(0, max - 1) + "…" : s);
 
@@ -42,31 +44,91 @@ ${refs
     .join("\n\n")}`;
 }
 
-export function buildSystemPrompt(opts: {
+export async function buildSystemPrompt(opts: {
   voice?: BrandVoice;
   past?: PastMissionSummary[];
   refs?: ReferenceItem[];
-}) {
+  concepts?: ExtractedConcepts;
+}): Promise<string> {
   const voiceBlock = buildVoiceHeader(opts.voice) || "Default to clear, concise, audience-first writing.";
   const pb = pastBlock(opts.past);
   const rb = refsBlock(opts.refs);
+  
+  // Format extracted concepts if available
+  const conceptsBlock = opts.concepts ? `
+EXTRACTED KEY CONCEPTS:
+${await formatConceptsForPrompt(opts.concepts)}
+` : "";
 
-  const jsonSpec = `IMPORTANT: Return ONLY a JSON object with exactly these 4 fields:
-- "linkedin": string (professional long-form)
-- "carousel": array of 5 objects: [{ "heading": string, "body": string }]
-- "threads": string (<= 500 characters)
-- "video_script": string (multi-line with timing cues)`;
+  const platformGuidelines = `
+PLATFORM-SPECIFIC BEST PRACTICES:
 
-  return `${voiceBlock}
+LINKEDIN:
+- Hook: Start with a counterintuitive statement, surprising statistic, or bold question
+- Structure: Short paragraphs (1-2 lines), use line breaks for readability
+- Include: Specific examples, metrics, lessons learned
+- Engagement: Ask a question at the end, invite experiences
+- Length: 1300-1500 characters optimal for reach
+- Format: Use • bullets for lists, numbers for steps
+
+INSTAGRAM CAROUSEL:
+- Slide 1: Hook with specific problem/benefit (e.g., "Cut development time by 70%")
+- Slide 2-4: One clear value point per slide with concrete examples
+- Slide 5: Strong CTA with specific next step (not just "follow for more")
+- Each slide: 125-150 characters for easy reading
+- Use: Numbers, statistics, before/after comparisons
+
+THREADS:
+- Hook: Lead with the most interesting/controversial point
+- Structure: Conversational, like you're texting a friend
+- Include: One powerful insight or takeaway
+- Length: 400-450 characters (leave room for engagement)
+
+VIDEO SCRIPT:
+- 0-3 seconds: Hook that promises specific value
+- Structure: Problem → Solution → Proof → CTA
+- Include: Visual cues, B-roll suggestions
+- Pacing: One point every 5-7 seconds
+- End: Clear next step with urgency`;
+
+  const qualityRequirements = `
+QUALITY REQUIREMENTS:
+1. SPECIFICITY: Include actual technologies, tools, metrics from the source
+2. VALUE-FIRST: Lead with benefits and outcomes, not features
+3. ENGAGEMENT: Use "you" language, ask questions, create curiosity gaps
+4. PROOF: Include data, examples, or social proof when available
+5. ACTIONABLE: Every piece must have clear takeaways
+6. UNIQUE: Avoid generic phrases like "in today's world" or "unlock the power"`;
+
+  const jsonSpec = `
+OUTPUT FORMAT:
+Return ONLY a JSON object with exactly these 4 fields:
+{
+  "linkedin": string (1300-2000 characters, formatted with line breaks),
+  "carousel": array of exactly 5 objects: [
+    { "heading": "Hook headline", "body": "Supporting text" },
+    { "heading": "Value point 1", "body": "Specific example/proof" },
+    { "heading": "Value point 2", "body": "Specific example/proof" },
+    { "heading": "Value point 3", "body": "Specific example/proof" },
+    { "heading": "Clear CTA", "body": "Specific next step" }
+  ],
+  "threads": string (400-500 characters, conversational),
+  "video_script": string (0:00 format, with visual cues)
+}`;
+
+  return `You are an expert social media content strategist who creates high-converting, value-packed content.
+
+${voiceBlock}
+
+${conceptsBlock}
 
 ${pb}
 
 ${rb}
 
-You are the BrandVoice.ai writer. Priorities:
-1) Obey Brand Voice.
-2) Align with Past Missions' tone/structure.
-3) Draw inspiration from External References (no copying).
+${platformGuidelines}
+
+${qualityRequirements}
 
 ${jsonSpec}`;
 }
@@ -76,19 +138,49 @@ export function buildUserPrompt(opts: {
   transcript?: string;
   presetNote?: string;
   targetNotes?: string;
+  concepts?: ExtractedConcepts;
 }) {
-  const { caption, transcript, presetNote, targetNotes } = opts;
-  return `Transform the following into multi-platform outputs.
+  const { caption, transcript, presetNote, targetNotes, concepts } = opts;
+  
+  // Build specific instructions based on extracted concepts
+  const specificInstructions = concepts ? `
+MUST INCLUDE IN YOUR CONTENT:
+- Technologies: ${concepts.technologies.slice(0, 5).join(", ") || "relevant tools mentioned"}
+- Key Problems: ${concepts.problems[0] || "main challenge addressed"}
+- Main Benefit: ${concepts.benefits[0] || "primary value proposition"}
+${concepts.statistics.length > 0 ? `- Data Points: ${concepts.statistics.slice(0, 2).join(", ")}` : ""}
+- Target: ${concepts.targetAudience}
+
+USE THESE HOOKS (adapt to platform):
+${concepts.hooks.slice(0, 3).map((h, i) => `${i + 1}. ${h}`).join("\n")}
+` : "";
+
+  return `Transform the following content into high-engagement, value-packed social media posts.
 
 SOURCE CAPTION:
 ${CLAMP(caption, 2400)}
 
-${transcript ? `OPTIONAL TRANSCRIPT:\n${CLAMP(transcript, 3200)}\n` : ""}
+${transcript ? `VIDEO/AUDIO TRANSCRIPT:
+${CLAMP(transcript, 3200)}
+` : ""}
 
-${presetNote ? `PRESET GUIDANCE:\n${presetNote}\n` : ""}
+${specificInstructions}
 
-${targetNotes ? `ADDITIONAL CONSTRAINTS:\n${targetNotes}\n` : ""}
+${presetNote ? `PRESET GUIDANCE:
+${presetNote}
+` : ""}
 
-Return valid JSON per the system spec.`;
+${targetNotes ? `ADDITIONAL REQUIREMENTS:
+${targetNotes}
+` : ""}
+
+CRITICAL INSTRUCTIONS:
+1. Extract and highlight SPECIFIC technologies, tools, and methods mentioned
+2. Include concrete numbers, timeframes, or metrics when available
+3. Focus on transformation: problem → solution → outcome
+4. Make every word count - no fluff or generic statements
+5. Create content that provides immediate value
+
+Generate the multi-platform content following the exact JSON format specified.`;
 }
 
