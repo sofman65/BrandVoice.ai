@@ -13,12 +13,8 @@ import {
 } from "lucide-react";
 import { VoicePicker } from "@/features/voices/components/voice-picker";
 import { ContentSelectorModal } from "@/components/content-selector-modal";
-import {
-  validateUrl,
-  fetchPreviewData,
-  findExistingMission,
-  type SourceType,
-} from "@/lib/utils";
+import { fetchPreviewData, findExistingMission } from "@/lib/utils";
+import { validateUrl, type SourceType } from "@/lib/url-validation";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { YouTubePreview } from "@/components/youtube-preview";
 import { ContentResults } from "@/features/missions/components/content-results";

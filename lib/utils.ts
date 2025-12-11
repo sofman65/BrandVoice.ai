@@ -66,35 +66,6 @@ export function getAudioUrlFromVideo(mediaUrl: string): string {
 // URL VALIDATION & PROCESSING
 // ============================================================================
 
-export type SourceType = "instagram" | "youtube"
-
-export interface UrlValidationResult {
-  isValid: boolean
-  type: SourceType | null
-  notSupported?: boolean
-}
-
-/**
- * Validate URL and determine source type
- * Note: Instagram support is not yet implemented
- */
-export function validateUrl(url: string): UrlValidationResult {
-  if (!url.trim()) {
-    return { isValid: false, type: null }
-  }
-
-  if (isValidYouTubeUrl(url)) {
-    return { isValid: true, type: "youtube" }
-  }
-
-  // Instagram URLs are detected but marked as not supported
-  if (isValidInstagramUrl(url)) {
-    return { isValid: false, type: "instagram", notSupported: true }
-  }
-
-  return { isValid: false, type: null }
-}
-
 /**
  * Get platform icon name for consistent icon usage
  */
